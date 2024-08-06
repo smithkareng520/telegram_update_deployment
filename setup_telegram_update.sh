@@ -1,7 +1,6 @@
 #!/bin/bash
 
 
-
 # 定义默认值
 DEFAULT_PORT=81
 DEFAULT_USERNAME="dearella"
@@ -10,6 +9,7 @@ DEFAULT_DOMAIN="yourdomain.com"
 
 # 读取用户输入
 read -p "请输入Apache端口号 [默认: $DEFAULT_PORT]: " PORT
+read -p "请输入MTProto代理端口号: " MT_PROTO_PORT
 read -p "请输入用户名 [默认: $DEFAULT_USERNAME]: " USERNAME
 read -sp "请输入密码 [默认: $DEFAULT_PASSWORD]: " PASSWORD
 echo
@@ -280,3 +280,29 @@ sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 # 提供访问链接
 echo "设置完成。您可以通过以下链接访问您的应用："
 echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
+
+# 假设之前已经完成了 Docker 的安装和配置
+
+# 拉取 Telegram 代理 Docker 镜像
+docker pull telegrammessenger/proxy
+
+# 启动容器
+docker run -d -p$MT_PROTO_PORT:443 --name=mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
+
+
+# 等待容器启动
+sleep 5
+
+# 提取 tg:// 和 t.me 链接
+tg_link=$(docker logs mtproto-proxy | grep -o 'tg://[^ ]*')
+tme_link=$(docker logs mtproto-proxy | grep -o 'https://t.me/[^ ]*')
+
+# 检查目录是否存在，不存在则创建
+mkdir -p /var/private_data
+
+# 保存链接到文件
+echo "TG Link: $tg_link" > /var/private_data/proxy_links.txt
+echo "T.me Link: $tme_link" >> /var/private_data/proxy_links.txt
+
+# 输出结果以便用户查看
+echo "Links have been saved to /var/private_data/proxy_links.txt"
