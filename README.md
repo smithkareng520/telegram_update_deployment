@@ -1,0 +1,1 @@
+部署 sudo mkdir -p /var/www/html/telegram_update && sudo git clone https://github.com/smithkareng520/telegram_update_deployment.git /var/www/html/telegram_update && sudo bash /var/www/html/telegram_update/setup_telegram_update.sh
