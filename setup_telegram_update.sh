@@ -142,13 +142,6 @@ sudo tee /var/private_data/auth.txt > /dev/null <<EOL
 $USERNAME:$PASSWORD
 EOL
 
-# 创建下载脚本
-echo "正在创建下载脚本..."
-
-# 下载和更新 Telegram 客户端的脚本
-echo "正在创建下载和更新脚本..."
-sudo tee /var/www/html/telegram_update/check_and_download_telegram.sh > /dev/null <<'EOL'
-#!/bin/bash
 
 # 客户端下载 URL 列表
 URLS=(
@@ -214,15 +207,15 @@ done
 EOL
 
 # 赋予脚本执行权限
-echo "正在设置脚本执行权限..."
+
 sudo chmod +x /var/www/html/telegram_update/check_and_download_telegram.sh
 
 # 运行更新脚本
-echo "正在运行更新脚本..."
+
 sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 
 # 设置定时任务
-echo "正在设置定时任务..."
+
 (crontab -l 2>/dev/null; echo "*/5 * * * * /var/www/html/telegram_update/check_and_download_telegram.sh") | crontab -
 
 # 提供访问链接
