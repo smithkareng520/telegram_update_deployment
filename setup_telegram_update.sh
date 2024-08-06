@@ -25,32 +25,76 @@ echo "用户名: $USERNAME"
 echo "密码: [隐藏]"
 echo "域名: $DOMAIN"
 
+# 系统识别和更新
+echo "正在识别操作系统..."
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_NAME=$ID
+    OS_VERSION=$VERSION_ID
+else
+    echo "无法识别操作系统。"
+    exit 1
+fi
+
+echo "操作系统: $OS_NAME $OS_VERSION"
+
 # 更新系统
 echo "正在更新系统..."
-sudo apt update
-sudo apt upgrade -y
+if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+    sudo apt update
+    sudo apt upgrade -y
+elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
+    sudo yum update -y
+elif [ "$OS_NAME" == "fedora" ]; then
+    sudo dnf update -y
+else
+    echo "不支持的操作系统。"
+    exit 1
+fi
 
 # 安装Apache和PHP
 echo "正在安装Apache和PHP..."
-sudo apt install -y apache2 php libapache2-mod-php php-cli php-curl php-zip curl
+if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+    sudo apt install -y apache2 php libapache2-mod-php php-cli php-curl php-zip curl
+elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
+    sudo yum install -y httpd php php-cli php-curl php-zip curl
+elif [ "$OS_NAME" == "fedora" ]; then
+    sudo dnf install -y httpd php php-cli php-curl php-zip curl
+fi
 
 # 配置防火墙
 echo "正在配置防火墙..."
-sudo ufw allow $PORT/tcp
-sudo ufw enable
-
+if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+    sudo ufw allow $PORT/tcp
+    sudo ufw enable
+elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
+    sudo firewall-cmd --permanent --add-port=$PORT/tcp
+    sudo firewall-cmd --reload
+elif [ "$OS_NAME" == "fedora" ]; then
+    sudo firewall-cmd --add-port=$PORT/tcp --permanent
+    sudo firewall-cmd --reload
+fi
 
 # 更新 Apache 配置文件，监听自定义端口
 echo "正在更新 Apache 配置文件..."
-sudo tee /etc/apache2/ports.conf > /dev/null <<EOL
+if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+    sudo tee /etc/apache2/ports.conf > /dev/null <<EOL
 Listen 80
 Listen 443
 Listen $PORT
 EOL
+elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
+    sudo tee /etc/httpd/conf/httpd.conf > /dev/null <<EOL
+Listen 80
+Listen 443
+Listen $PORT
+EOL
+fi
 
 # 创建虚拟主机配置
 echo "正在创建虚拟主机配置..."
-sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
+if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+    sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
 <VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot /var/www/html/telegram_update
@@ -64,13 +108,27 @@ sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
     </Directory>
 </VirtualHost>
 EOL
+    sudo a2ensite telegram_update
+    sudo a2enmod php
+    sudo a2enmod mpm_prefork
+    sudo systemctl restart apache2
+elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
+    sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
+<VirtualHost *:$PORT>
+    ServerAdmin webmaster@$DOMAIN
+    DocumentRoot /var/www/html/telegram_update
+    ErrorLog logs/error_log
+    CustomLog logs/access_log combined
 
-# 启用站点配置和所需模块
-echo "正在启用站点配置和所需模块..."
-sudo a2ensite telegram_update
-sudo a2enmod php
-sudo a2enmod mpm_prefork
-sudo systemctl restart apache2
+    <Directory /var/www/html/telegram_update>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+EOL
+    sudo systemctl restart httpd
+fi
 
 # 创建安全目录存放敏感信息
 echo "正在创建安全目录存放敏感信息..."
@@ -83,10 +141,6 @@ echo "正在创建 auth.txt 文件..."
 sudo tee /var/private_data/auth.txt > /dev/null <<EOL
 $USERNAME:$PASSWORD
 EOL
-
-# 创建 PHP 文件
-echo "正在创建 PHP 文件..."
-
 
 # 创建下载脚本
 echo "正在创建下载脚本..."
@@ -162,7 +216,6 @@ EOL
 # 赋予脚本执行权限
 echo "正在设置脚本执行权限..."
 sudo chmod +x /var/www/html/telegram_update/check_and_download_telegram.sh
-
 
 # 运行更新脚本
 echo "正在运行更新脚本..."
