@@ -281,7 +281,11 @@ sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 echo "设置完成。您可以通过以下链接访问您的应用："
 echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
 
-# 假设之前已经完成了 Docker 的安装和配置
+
+#删除旧容器
+docker stop mtproto-proxy
+docker rm mtproto-proxy
+
 
 # 拉取 Telegram 代理 Docker 镜像
 docker pull telegrammessenger/proxy
