@@ -221,46 +221,67 @@ echo "正在创建 check_and_download_telegram.sh 脚本..."
 sudo tee /var/www/html/telegram_update/check_and_download_telegram.sh > /dev/null <<EOL
 #!/bin/bash
 
-URL="https://updates.tdesktop.com/tlinux/tsetup.tar.xz"
-FILE_PATH="/var/www/html/telegram_update/tsetup.tar.xz"
-LAST_MOD_FILE="/var/www/html/telegram_update/last_modified.txt"
-LOG_FILE="/var/www/html/telegram_update/update.log"
+# 客户端下载 URL 列表
+URLS=(
+    "https://telegram.org/dl/desktop/win64_portable"
+    "https://telegram.org/dl/desktop/mac"
+    "https://telegram.org/dl/desktop/linux"
+    "https://telegram.org/dl/android/apk"
+)
 
-if [ ! -f "\$FILE_PATH" ]; then
-    echo "\$(date): \$FILE_PATH not found. Downloading initial version..." >> "\$LOG_FILE"
-    if curl -s -L -o "\$FILE_PATH" "\$URL"; then
-        echo "\$(date): Initial download completed successfully." >> "\$LOG_FILE"
-    else
-        echo "\$(date): Error occurred while downloading." >> "\$LOG_FILE"
-    fi
+# 目标目录
+DEST_DIR="/var/www/html/telegram_update"
+LOG_FILE="\$DEST_DIR/download_log.txt"
 
-    # 获取并保存 Last-Modified 头部
-    LAST_MOD=\$(curl -s -I "\$URL" | grep -i "Last-Modified" | awk -F': ' '{print \$2}')
-    echo "\$LAST_MOD" > "\$LAST_MOD_FILE"
-else
-    # 获取新的 Last-Modified 头部
-    NEW_LAST_MOD=\$(curl -s -I "\$URL" | grep -i "Last-Modified" | awk -F': ' '{print \$2}')
+# 创建或清空日志文件
+: > "\$LOG_FILE"
 
-    # 读取之前保存的 Last-Modified 时间
-    if [ -f "\$LAST_MOD_FILE" ]; then
-        OLD_LAST_MOD=\$(cat "\$LAST_MOD_FILE")
-    else
-        OLD_LAST_MOD=""
-    fi
+# 处理每个 URL
+for URL in "\${URLS[@]}"; do
+    BASE_NAME=\$(basename "\$URL")
+    FILE_NAME="telegram_\${BASE_NAME}.zip"
+    LAST_MOD_FILE="\$DEST_DIR/\${BASE_NAME}_last_modified.txt"
+    FILE_PATH="\$DEST_DIR/\$FILE_NAME"
 
-    # 比较新的和旧的 Last-Modified 时间
-    if [ "\$NEW_LAST_MOD" != "\$OLD_LAST_MOD" ]; then
-        echo "\$(date): New version detected. Downloading update..." >> "\$LOG_FILE"
+    echo "\$(date): Processing \$URL" >> "\$LOG_FILE"
+
+    # 如果文件不存在，则下载
+    if [ ! -f "\$FILE_PATH" ]; then
+        echo "\$(date): \$FILE_NAME not found. Downloading initial version..." >> "\$LOG_FILE"
         if curl -s -L -o "\$FILE_PATH" "\$URL"; then
-            echo "\$(date): Download completed successfully." >> "\$LOG_FILE"
+            echo "\$(date): Initial download completed successfully for \$FILE_NAME." >> "\$LOG_FILE"
         else
-            echo "\$(date): Error occurred while downloading." >> "\$LOG_FILE"
+            echo "\$(date): Error occurred while downloading \$FILE_NAME." >> "\$LOG_FILE"
         fi
-        echo "\$NEW_LAST_MOD" > "\$LAST_MOD_FILE"
+
+        # 获取并保存 Last-Modified 头部
+        LAST_MOD=\$(curl -s -I "\$URL" | grep -i "Last-Modified" | awk -F': ' '{print \$2}')
+        echo "\$LAST_MOD" > "\$LAST_MOD_FILE"
     else
-        echo "\$(date): No update available." >> "\$LOG_FILE"
+        # 获取新的 Last-Modified 头部
+        NEW_LAST_MOD=\$(curl -s -I "\$URL" | grep -i "Last-Modified" | awk -F': ' '{print \$2}')
+
+        # 读取之前保存的 Last-Modified 时间
+        if [ -f "\$LAST_MOD_FILE" ]; then
+            OLD_LAST_MOD=\$(cat "\$LAST_MOD_FILE")
+        else
+            OLD_LAST_MOD=""
+        fi
+
+        # 比较新的和旧的 Last-Modified 时间
+        if [ "\$NEW_LAST_MOD" != "\$OLD_LAST_MOD" ]; then
+            echo "\$(date): New version detected for \$FILE_NAME. Downloading update..." >> "\$LOG_FILE"
+            if curl -s -L -o "\$FILE_PATH" "\$URL"; then
+                echo "\$(date): Download completed successfully for \$FILE_NAME." >> "\$LOG_FILE"
+            else
+                echo "\$(date): Error occurred while downloading \$FILE_NAME." >> "\$LOG_FILE"
+            fi
+            echo "\$NEW_LAST_MOD" > "\$LAST_MOD_FILE"
+        else
+            echo "\$(date): No update available for \$FILE_NAME." >> "\$LOG_FILE"
+        fi
     fi
-fi
+done
 EOL
 sudo chmod +x /var/www/html/telegram_update/check_and_download_telegram.sh
 
