@@ -126,25 +126,6 @@ case "$OS_NAME" in
         ;;
 esac
 
-# 更新 Apache 配置文件，监听自定义端口
-
-# 更新 Apache 配置文件，监听自定义端口
-echo "正在更新 Apache 配置文件..."
-update_apache_config() {
-    case "$OS_NAME" in
-        ubuntu|debian)
-            if ! grep -q "Listen $PORT" /etc/apache2/ports.conf; then
-                echo "Listen $PORT" | sudo tee -a /etc/apache2/ports.conf
-            fi
-            ;;
-        centos|rhel|fedora)
-            if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
-                echo "Listen $PORT" | sudo tee -a /etc/httpd/conf/httpd.conf
-            fi
-            ;;
-    esac
-}
-
 # 调用更新 Apache 配置文件的函数
 update_apache_config
 
@@ -152,7 +133,7 @@ update_apache_config
 echo "正在创建虚拟主机配置..."
 case "$OS_NAME" in
     ubuntu|debian)
-        sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
+sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
 <VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot /var/www/html/telegram_update
@@ -166,10 +147,12 @@ case "$OS_NAME" in
     </Directory>
 </VirtualHost>
 EOL
-        sudo a2ensite telegram_update
-        sudo a2enmod php7.4
-        sudo a2enmod mpm_prefork
-        sudo systemctl restart apache2
+        # 启用站点配置和所需模块
+echo "正在启用站点配置和所需模块..."
+sudo a2ensite telegram_update
+sudo a2enmod php
+sudo a2enmod mpm_prefork
+sudo systemctl restart apache2
         ;;
     centos|rhel|fedora)
         sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
@@ -279,7 +262,11 @@ sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 # 设置定时任务
 (crontab -l 2>/dev/null; echo "*/5 * * * * /var/www/html/telegram_update/check_and_download_telegram.sh") | crontab -
 
+# 提供访问链接
+echo "设置完成。您可以通过以下链接访问您的应用："
+echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
 
+# Docker 部署 MTProto 代理
 
 echo "正在部署 MTProto 代理..."
 if [ "$(docker ps -q -f name=mtproto-proxy)" ]; then
@@ -287,7 +274,7 @@ if [ "$(docker ps -q -f name=mtproto-proxy)" ]; then
     docker stop mtproto-proxy
     docker rm mtproto-proxy
 fi
-
+sleep 5
 docker pull telegrammessenger/proxy
 docker run -d -p$MT_PROTO_PORT:443 --name mtproto-proxy --restart=always -v proxy-config:/data -e SECRET=ab9b40530c90ef7bd07d892802008734 telegrammessenger/proxy:latest
 # 提取代理链接
@@ -295,12 +282,13 @@ sleep 5
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
 tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
 
-# 获取主机 IP 地址
+# 获取主机 IP 地址和外部端口
 HOST_IP=$(hostname -I | awk '{print $1}')
+EXTERNAL_PORT=$MT_PROTO_PORT  # 使用脚本中的 MTProto 代理外部端口号
 
 # 替换链接中的端口为外部端口号
-tg_link_external="tg://proxy?server=${HOST_IP}&port=$MT_PROTO_PORT&secret=ab9b40530c90ef7bd07d892802008734"
-tme_link_external="https://t.me/proxy?server=${HOST_IP}&port=$MT_PROTO_PORT&secret=ab9b40530c90ef7bd07d892802008734"
+tg_link_external="tg://proxy?server=${HOST_IP}&port=${EXTERNAL_PORT}&secret=ab9b40530c90ef7bd07d892802008734"
+tme_link_external="https://t.me/proxy?server=${HOST_IP}&port=${EXTERNAL_PORT}&secret=ab9b40530c90ef7bd07d892802008734"
 
 # 保存链接到文件
 echo "保存代理链接到文件..."
@@ -318,7 +306,3 @@ echo "设置每天重启 MTProto 代理容器的定时任务..."
 (crontab -l 2>/dev/null; echo "0 0 * * * docker restart mtproto-proxy") | crontab -
 
 echo "所有设置完成。"
-
-# 提供访问链接
-echo "设置完成。您可以通过以下链接访问您的应用："
-echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
