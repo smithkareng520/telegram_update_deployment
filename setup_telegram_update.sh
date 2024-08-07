@@ -294,7 +294,7 @@ docker rm mtproto-proxy
 docker pull telegrammessenger/proxy
 
 # 启动容器
-docker run -d -p$MT_PROTO_PORT:443 --name=mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
+docker run -d -p$MT_PROTO_PORT:$MT_PROTO_PORT --name=mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
 
 
 # 等待容器启动
