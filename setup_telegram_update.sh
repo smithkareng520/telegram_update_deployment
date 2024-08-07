@@ -135,20 +135,27 @@ fi
 
 # 更新 Apache 配置文件，监听自定义端口
 echo "正在更新 Apache 配置文件..."
-if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
-    sudo tee /etc/apache2/ports.conf > /dev/null <<EOL
-Listen 80
-Listen 443
+update_apache_config() {
+    if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+        # 检查端口是否已经在配置文件中
+        if ! grep -q "Listen $PORT" /etc/apache2/ports.conf; then
+            sudo tee -a /etc/apache2/ports.conf > /dev/null <<EOL
 Listen $PORT
 EOL
+        fi
 
-elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
-    sudo tee /etc/httpd/conf/httpd.conf > /dev/null <<EOL
-Listen 80
-Listen 443
+    elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
+        # 检查端口是否已经在配置文件中
+        if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
+            sudo tee -a /etc/httpd/conf/httpd.conf > /dev/null <<EOL
 Listen $PORT
 EOL
-fi
+        fi
+    fi
+}
+
+# 调用更新 Apache 配置文件的函数
+update_apache_config
 
 # 创建虚拟主机配置
 echo "正在创建虚拟主机配置..."
