@@ -65,7 +65,7 @@ install_docker() {
         centos|rhel)
             sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
             sudo yum install -y yum-utils
-            sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+            sudo yum-config-manager --add-repo https://download.docker.com/linux/$OS_NAME/docker-ce.repo
             sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             ;;
         ubuntu|debian)
@@ -79,7 +79,7 @@ install_docker() {
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             ;;
         fedora)
-            sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
+            sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
             sudo dnf -y install dnf-plugins-core
             sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
             sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -122,9 +122,9 @@ else
     echo "不支持的操作系统，无法配置防火墙。"
 fi
 
-# 检查是否存在 Apache 端口配置并更新
+# 更新 Apache 配置
+echo "正在更新 Apache 配置文件..."
 update_apache_config() {
-    echo "正在更新 Apache 配置文件..."
     if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
         if ! grep -q "Listen $APACHE_PORT" /etc/apache2/ports.conf; then
             sudo sed -i "\$aListen $APACHE_PORT" /etc/apache2/ports.conf
@@ -139,7 +139,7 @@ update_apache_config() {
 # 更新 Apache 配置
 update_apache_config
 
-# 检查并创建虚拟主机配置
+# 创建虚拟主机配置
 create_vhost_config() {
     echo "正在创建虚拟主机配置..."
     local conf_file
@@ -148,7 +148,9 @@ create_vhost_config() {
     if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
         conf_file="/etc/apache2/sites-available/telegram_update.conf"
         vhost_dir="/var/www/html/telegram_update"
-        if [ ! -f $conf_file ]; then
+        if [ -f $conf_file ]; then
+            echo "虚拟主机配置文件已存在，覆盖更新..."
+        else
             sudo mkdir -p $vhost_dir
             sudo tee $conf_file > /dev/null <<EOL
 <VirtualHost *:$APACHE_PORT>
@@ -167,13 +169,13 @@ EOL
             sudo a2ensite telegram_update.conf
             sudo a2enmod php
             sudo systemctl restart apache2
-        else
-            echo "虚拟主机配置文件已存在，跳过创建。"
         fi
     elif [[ "$OS_NAME" == "centos" || "$OS_NAME" == "rhel" || "$OS_NAME" == "fedora" ]]; then
         conf_file="/etc/httpd/conf.d/telegram_update.conf"
         vhost_dir="/var/www/html/telegram_update"
-        if [ ! -f $conf_file ]; then
+        if [ -f $conf_file ]; then
+            echo "虚拟主机配置文件已存在，覆盖更新..."
+        else
             sudo mkdir -p $vhost_dir
             sudo tee $conf_file > /dev/null <<EOL
 <VirtualHost *:$APACHE_PORT>
@@ -190,8 +192,6 @@ EOL
 </VirtualHost>
 EOL
             sudo systemctl restart httpd
-        else
-            echo "虚拟主机配置文件已存在，跳过创建。"
         fi
     fi
 }
@@ -206,19 +206,14 @@ sudo chown -R www-data:www-data /var/private_data
 sudo chmod -R 700 /var/private_data
 
 # 创建 auth.txt 文件
-if [ ! -f /var/private_data/auth.txt ]; then
-    echo "正在创建 auth.txt 文件..."
-    sudo tee /var/private_data/auth.txt > /dev/null <<EOL
+echo "正在创建 auth.txt 文件..."
+sudo tee /var/private_data/auth.txt > /dev/null <<EOL
 $USERNAME:$PASSWORD
 EOL
-else
-    echo "auth.txt 文件已存在，跳过创建。"
-fi
 
 # 创建和配置下载脚本
-if [ ! -f /var/www/html/telegram_update/check_and_download_telegram.sh ]; then
-    echo "正在创建 check_and_download_telegram.sh 脚本..."
-    sudo tee /var/www/html/telegram_update/check_and_download_telegram.sh > /dev/null <<EOL
+echo "正在创建 check_and_download_telegram.sh 脚本..."
+sudo tee /var/www/html/telegram_update/check_and_download_telegram.sh > /dev/null <<EOL
 #!/bin/bash
 
 URL="https://updates.tdesktop.com/tlinux/tsetup.tar.xz"
@@ -227,11 +222,11 @@ LAST_MOD_FILE="/var/www/html/telegram_update/last_modified.txt"
 LOG_FILE="/var/www/html/telegram_update/update.log"
 
 if [ ! -f "\$FILE_PATH" ]; then
-    echo "\$(date): \$FILE_NAME not found. Downloading initial version..." >> "\$LOG_FILE"
+    echo "\$(date): \$FILE_PATH not found. Downloading initial version..." >> "\$LOG_FILE"
     if curl -s -L -o "\$FILE_PATH" "\$URL"; then
-        echo "\$(date): Initial download completed successfully for \$FILE_NAME." >> "\$LOG_FILE"
+        echo "\$(date): Initial download completed successfully." >> "\$LOG_FILE"
     else
-        echo "\$(date): Error occurred while downloading \$FILE_NAME." >> "\$LOG_FILE"
+        echo "\$(date): Error occurred while downloading." >> "\$LOG_FILE"
     fi
 
     # 获取并保存 Last-Modified 头部
@@ -250,27 +245,26 @@ else
 
     # 比较新的和旧的 Last-Modified 时间
     if [ "\$NEW_LAST_MOD" != "\$OLD_LAST_MOD" ]; then
-        echo "\$(date): New version detected for \$FILE_NAME. Downloading update..." >> "\$LOG_FILE"
+        echo "\$(date): New version detected. Downloading update..." >> "\$LOG_FILE"
         if curl -s -L -o "\$FILE_PATH" "\$URL"; then
-            echo "\$(date): Download completed successfully for \$FILE_NAME." >> "\$LOG_FILE"
+            echo "\$(date): Download completed successfully." >> "\$LOG_FILE"
         else
-            echo "\$(date): Error occurred while downloading \$FILE_NAME." >> "\$LOG_FILE"
+            echo "\$(date): Error occurred while downloading." >> "\$LOG_FILE"
         fi
         echo "\$NEW_LAST_MOD" > "\$LAST_MOD_FILE"
     else
-        echo "\$(date): No update available for \$FILE_NAME." >> "\$LOG_FILE"
+        echo "\$(date): No update available." >> "\$LOG_FILE"
     fi
 fi
 EOL
-    sudo chmod +x /var/www/html/telegram_update/check_and_download_telegram.sh
-else
-    echo "下载脚本已存在，跳过创建。"
-fi
+sudo chmod +x /var/www/html/telegram_update/check_and_download_telegram.sh
 
 # 运行更新脚本
+echo "正在运行更新脚本..."
 sudo /var/www/html/telegram_update/check_and_download_telegram.sh
 
 # 设置定时任务
+echo "设置定时任务..."
 (crontab -l 2>/dev/null; echo "*/5 * * * * /var/www/html/telegram_update/check_and_download_telegram.sh") | crontab -
 
 # 提供访问链接
@@ -280,25 +274,25 @@ echo "http://$(hostname -I | awk '{print $1}'):$APACHE_PORT"
 # Docker 部署 MTProto 代理
 echo "正在部署 MTProto 代理..."
 if [ "$(docker ps -q -f name=mtproto-proxy)" ]; then
-    echo "MTProto 代理容器已存在，跳过创建。"
-else
-    docker pull telegrammessenger/proxy
-    docker run -d -p $MT_PROTO_PORT:$MT_PROTO_PORT --name mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
+    echo "MTProto 代理容器已存在，停止并删除现有容器..."
+    docker stop mtproto-proxy
+    docker rm mtproto-proxy
 fi
+
+docker pull telegrammessenger/proxy
+docker run -d -p $MT_PROTO_PORT:$MT_PROTO_PORT --name mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
 
 # 提取代理链接
 sleep 5
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
 tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
 
-# 保存链接到文件（避免重复保存）
-if [ ! -f /var/private_data/proxy_links.txt ]; then
-    echo "TG Link: $tg_link" > /var/private_data/proxy_links.txt
-    echo "T.me Link: $tme_link" >> /var/private_data/proxy_links.txt
-    echo "代理链接已保存至 /var/private_data/proxy_links.txt"
-else
-    echo "代理链接已存在于 /var/private_data/proxy_links.txt，跳过保存。"
-fi
+# 保存链接到文件
+echo "保存代理链接到文件..."
+sudo tee /var/private_data/proxy_links.txt > /dev/null <<EOL
+TG Link: $tg_link
+T.me Link: $tme_link
+EOL
 
 # 输出代理链接
 echo "TG 代理链接: $tg_link"
