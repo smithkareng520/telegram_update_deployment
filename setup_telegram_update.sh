@@ -4,9 +4,8 @@
 
 # 定义默认值
 DEFAULT_PORT=81
-DEFAULT_MT_PROTO_PORT=443
-DEFAULT_USERNAME="admin"
-DEFAULT_PASSWORD="admin"
+DEFAULT_USERNAME="dearella"
+DEFAULT_PASSWORD="KSXJY123456"
 DEFAULT_DOMAIN="yourdomain.com"
 
 # 读取用户输入
@@ -19,7 +18,6 @@ read -p "请输入您的域名 [默认: $DEFAULT_DOMAIN]: " DOMAIN
 
 # 使用默认值如果用户没有输入
 PORT=${PORT:-$DEFAULT_PORT}
-MT_PROTO_PORT=${PORT:-$DEFAULT_MT_PROTO_PORT}
 USERNAME=${USERNAME:-$DEFAULT_USERNAME}
 PASSWORD=${PASSWORD:-$DEFAULT_PASSWORD}
 DOMAIN=${DOMAIN:-$DEFAULT_DOMAIN}
@@ -56,8 +54,7 @@ install_docker() {
         sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
         sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         sudo systemctl start docker
-        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
-
+        sudo docker run hello-world
 
     elif [ "$OS_NAME" == "debian" ]; then
         for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
@@ -69,8 +66,7 @@ install_docker() {
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update
         sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
-
+        sudo docker run hello-world
 
     elif [ "$OS_NAME" == "ubuntu" ]; then
         for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
@@ -82,8 +78,7 @@ install_docker() {
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update
         sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
-
+        sudo docker run hello-world
 
     elif [ "$OS_NAME" == "rhel" ]; then
         sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
@@ -91,8 +86,7 @@ install_docker() {
         sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
         sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         sudo systemctl start docker
-        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
-
+        sudo docker run hello-world
 
     elif [ "$OS_NAME" == "fedora" ]; then
         sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
@@ -100,8 +94,7 @@ install_docker() {
         sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
         sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         sudo systemctl start docker
-        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
-
+        sudo docker run hello-world
 
     else
         echo "不支持的操作系统。"
@@ -129,17 +122,14 @@ fi
 echo "正在配置防火墙..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     sudo ufw allow $PORT/tcp
-    sudo ufw allow $MT_PROTO_PORT/tcp
     sudo ufw enable
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
     sudo firewall-cmd --permanent --add-port=$PORT/tcp
-    sudo firewall-cmd --permanent --add-port=$MT_PROTO_PORT/tcp
     sudo firewall-cmd --reload
 
 elif [ "$OS_NAME" == "fedora" ]; then
     sudo firewall-cmd --add-port=$PORT/tcp --permanent
-    sudo firewall-cmd --add-port=$MT_PROTO_PORT/tcp --permanent
     sudo firewall-cmd --reload
 fi
 
@@ -148,17 +138,15 @@ echo "正在更新 Apache 配置文件..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     sudo tee /etc/apache2/ports.conf > /dev/null <<EOL
 Listen 80
-Listen 442
+Listen 443
 Listen $PORT
-Listen $MT_PROTO_PORT
 EOL
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
     sudo tee /etc/httpd/conf/httpd.conf > /dev/null <<EOL
 Listen 80
-Listen 442
+Listen 443
 Listen $PORT
-Listen $MT_PROTO_PORT
 EOL
 fi
 
@@ -291,10 +279,11 @@ sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 # 设置定时任务
 (crontab -l 2>/dev/null; echo "*/5 * * * * /var/www/html/telegram_update/check_and_download_telegram.sh") | crontab -
 
-
 # 提供访问链接
 echo "设置完成。您可以通过以下链接访问您的应用："
 echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
+
+# 假设之前已经完成了 Docker 的安装和配置
 
 # 拉取 Telegram 代理 Docker 镜像
 docker pull telegrammessenger/proxy
@@ -306,13 +295,11 @@ docker run -d -p$MT_PROTO_PORT:443 --name=mtproto-proxy --restart=always -v prox
 sleep 5
 
 # 提取 tg:// 和 t.me 链接
-tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
-tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
+tg_link=$(docker logs mtproto-proxy | grep -o 'tg://[^ ]*')
+tme_link=$(docker logs mtproto-proxy | grep -o 'https://t.me/[^ ]*')
 
-# 显示链接
-echo "TG Link: $tg_link"
-echo "T.me Link: $tme_link"
-
+# 检查目录是否存在，不存在则创建
+mkdir -p /var/private_data
 
 # 保存链接到文件
 echo "TG Link: $tg_link" > /var/private_data/proxy_links.txt
