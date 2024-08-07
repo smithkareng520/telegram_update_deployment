@@ -56,7 +56,8 @@ install_docker() {
         sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
         sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         sudo systemctl start docker
-        sudo docker run hello-world
+        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
+
 
     elif [ "$OS_NAME" == "debian" ]; then
         for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
@@ -68,7 +69,8 @@ install_docker() {
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update
         sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        sudo docker run hello-world
+        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
+
 
     elif [ "$OS_NAME" == "ubuntu" ]; then
         for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
@@ -80,7 +82,8 @@ install_docker() {
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update
         sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        sudo docker run hello-world
+        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
+
 
     elif [ "$OS_NAME" == "rhel" ]; then
         sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
@@ -88,7 +91,8 @@ install_docker() {
         sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
         sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         sudo systemctl start docker
-        sudo docker run hello-world
+        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
+
 
     elif [ "$OS_NAME" == "fedora" ]; then
         sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
@@ -96,7 +100,8 @@ install_docker() {
         sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
         sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         sudo systemctl start docker
-        sudo docker run hello-world
+        sudo docker run hello-world && sudo docker container prune -f && sudo docker rmi hello-world
+
 
     else
         echo "不支持的操作系统。"
