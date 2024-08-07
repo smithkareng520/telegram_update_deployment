@@ -1,8 +1,9 @@
 #!/bin/bash
 
+
 # 定义默认值
-DEFAULT_PORT=80
-DEFAULT_MT_PROTO_PORT=443
+DEFAULT_PORT=81
+DEFAULT_MT_PROTO_PORT=4443
 DEFAULT_USERNAME="admin"
 DEFAULT_PASSWORD="admin"
 DEFAULT_DOMAIN="domain.com"
@@ -45,6 +46,8 @@ echo "操作系统: $OS_NAME $OS_VERSION"
 
 # 安装和更新系统
 echo "正在更新系统并安装 Docker..."
+
+# 安装 Docker
 install_docker() {
     if [ "$OS_NAME" == "centos" ]; then
         sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
@@ -87,7 +90,7 @@ install_docker() {
         sudo docker run hello-world
 
     elif [ "$OS_NAME" == "fedora" ]; then
-        sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine
+        sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
         sudo dnf -y install dnf-plugins-core
         sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
         sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -100,7 +103,9 @@ install_docker() {
     fi
 }
 
+# 调用安装 Docker 的函数
 install_docker
+
 
 # 安装 Apache 和 PHP
 echo "正在安装 Apache 和 PHP..."
@@ -118,17 +123,14 @@ fi
 echo "正在配置防火墙..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     sudo ufw allow $PORT/tcp
-    sudo ufw allow $MT_PROTO_PORT/tcp
     sudo ufw enable
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
     sudo firewall-cmd --permanent --add-port=$PORT/tcp
-    sudo firewall-cmd --permanent --add-port=$MT_PROTO_PORT/tcp
     sudo firewall-cmd --reload
 
 elif [ "$OS_NAME" == "fedora" ]; then
     sudo firewall-cmd --add-port=$PORT/tcp --permanent
-    sudo firewall-cmd --add-port=$MT_PROTO_PORT/tcp --permanent
     sudo firewall-cmd --reload
 fi
 
@@ -137,17 +139,15 @@ echo "正在更新 Apache 配置文件..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     sudo tee /etc/apache2/ports.conf > /dev/null <<EOL
 Listen 80
-Listen 443
+Listen 442
 Listen $PORT
-Listen $MT_PROTO_PORT
 EOL
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
     sudo tee /etc/httpd/conf/httpd.conf > /dev/null <<EOL
 Listen 80
-Listen 443
+Listen 442
 Listen $PORT
-Listen $MT_PROTO_PORT
 EOL
 fi
 
@@ -193,7 +193,6 @@ fi
 
 # 创建安全目录存放敏感信息
 echo "正在创建安全目录存放敏感信息..."
-sudo rm -rf /var/private_data
 sudo mkdir -p /var/private_data
 sudo chown -R www-data:www-data /var/private_data
 sudo chmod -R 700 /var/private_data
@@ -285,36 +284,28 @@ sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 echo "设置完成。您可以通过以下链接访问您的应用："
 echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
 
-# 删除旧容器
+
+#删除旧容器
 docker stop mtproto-proxy
 docker rm mtproto-proxy
+
 
 # 拉取 Telegram 代理 Docker 镜像
 docker pull telegrammessenger/proxy
 
-# 生成随机秘钥
-SECRET=$(head -c 16 /dev/urandom | xxd -ps)
-
 # 启动容器
-docker run -d -p $MT_PROTO_PORT:$MT_PROTO_PORT -v proxy-config:/data -e SECRET=$SECRET telegrammessenger/proxy:latest
+docker run -d -p$MT_PROTO_PORT:$MT_PROTO_PORT --name=mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
 
-mkdir -p /var/private_data
-
-# 输出生成的秘钥
-echo "Docker container started with SECRET=$SECRET"
 
 # 等待容器启动
 sleep 5
 
-# 检查容器状态
-if ! docker ps | grep -q mtproto-proxy; then
-    echo "Docker container failed to start."
-    exit 1
-fi
-
 # 提取 tg:// 和 t.me 链接
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
 tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
+
+# 检查目录是否存在，不存在则创建
+mkdir -p /var/private_data
 
 # 保存链接到文件
 echo "TG Link: $tg_link" > /var/private_data/proxy_links.txt
