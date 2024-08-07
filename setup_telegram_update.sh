@@ -12,7 +12,6 @@ read -p "请输入Apache端口号 [默认: $DEFAULT_PORT]: " PORT
 read -p "请输入MTProto代理端口号 [默认: $DEFAULT_MT_PROTO_PORT]: " MT_PROTO_PORT
 read -p "请输入用户名 [默认: $DEFAULT_USERNAME]: " USERNAME
 read -sp "请输入密码 [默认: $DEFAULT_PASSWORD]: " PASSWORD
-echo
 read -p "请输入您的域名 [默认: $DEFAULT_DOMAIN]: " DOMAIN
 
 # 使用默认值如果用户没有输入
