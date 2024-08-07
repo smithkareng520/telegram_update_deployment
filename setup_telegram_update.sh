@@ -286,12 +286,10 @@ sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 # 设置定时任务
 (crontab -l 2>/dev/null; echo "*/5 * * * * /var/www/html/telegram_update/check_and_download_telegram.sh") | crontab -
 
-# 提取 tg:// 和 t.me 链接
-tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://[^ ]*' | head -n 1)
-tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/[^ ]*' | head -n 1)
 
-
-# 假设之前已经完成了 Docker 的安装和配置
+# 提供访问链接
+echo "设置完成。您可以通过以下链接访问您的应用："
+echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
 
 # 拉取 Telegram 代理 Docker 镜像
 docker pull telegrammessenger/proxy
@@ -309,7 +307,6 @@ tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[
 # 显示链接
 echo "TG Link: $tg_link"
 echo "T.me Link: $tme_link"
-
 
 
 # 保存链接到文件
