@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 # 定义默认值
 DEFAULT_PORT=81
 DEFAULT_USERNAME="admin"
@@ -48,110 +46,118 @@ echo "正在更新系统并安装 Docker..."
 
 # 安装 Docker
 install_docker() {
-    if [ "$OS_NAME" == "centos" ]; then
-        sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
-        sudo yum install -y yum-utils
-        sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-        sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        sudo systemctl start docker
-        sudo docker run hello-world
-
-    elif [ "$OS_NAME" == "debian" ]; then
-        for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
-        sudo apt-get update
-        sudo apt-get install -y ca-certificates curl
-        sudo install -m 0755 -d /etc/apt/keyrings
-        sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-        sudo chmod a+r /etc/apt/keyrings/docker.asc
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        sudo docker run hello-world
-
-    elif [ "$OS_NAME" == "ubuntu" ]; then
-        for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
-        sudo apt-get update
-        sudo apt-get install -y ca-certificates curl
-        sudo install -m 0755 -d /etc/apt/keyrings
-        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-        sudo chmod a+r /etc/apt/keyrings/docker.asc
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        sudo docker run hello-world
-
-    elif [ "$OS_NAME" == "rhel" ]; then
-        sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
-        sudo yum install -y yum-utils
-        sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-        sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        sudo systemctl start docker
-        sudo docker run hello-world
-
-    elif [ "$OS_NAME" == "fedora" ]; then
-        sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
-        sudo dnf -y install dnf-plugins-core
-        sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-        sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-        sudo systemctl start docker
-        sudo docker run hello-world
-
-    else
-        echo "不支持的操作系统。"
-        exit 1
+    if command -v docker > /dev/null 2>&1; then
+        echo "Docker 已经安装。"
+        return
     fi
+
+    case "$OS_NAME" in
+        centos)
+            sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+            sudo yum install -y yum-utils
+            sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+            sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            sudo systemctl start docker
+            ;;
+        debian)
+            sudo apt-get remove -y docker.io docker-doc docker-compose podman-docker containerd runc
+            sudo apt-get update
+            sudo apt-get install -y ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            ;;
+        ubuntu)
+            sudo apt-get remove -y docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc
+            sudo apt-get update
+            sudo apt-get install -y ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            ;;
+        rhel)
+            sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
+            sudo yum install -y yum-utils
+            sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+            sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            sudo systemctl start docker
+            ;;
+        fedora)
+            sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
+            sudo dnf -y install dnf-plugins-core
+            sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+            sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            sudo systemctl start docker
+            ;;
+        *)
+            echo "不支持的操作系统。"
+            exit 1
+            ;;
+    esac
+    sudo docker run hello-world
 }
 
 # 调用安装 Docker 的函数
 install_docker
 
-
 # 安装 Apache 和 PHP
 echo "正在安装 Apache 和 PHP..."
-if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
-    sudo apt install -y apache2 php libapache2-mod-php php-cli php-curl php-zip curl
-
-elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
-    sudo yum install -y httpd php php-cli php-curl php-zip curl
-
-elif [ "$OS_NAME" == "fedora" ]; then
-    sudo dnf install -y httpd php php-cli php-curl php-zip curl
-fi
+case "$OS_NAME" in
+    ubuntu|debian)
+        sudo apt-get install -y apache2 php libapache2-mod-php php-cli php-curl php-zip curl
+        ;;
+    centos|rhel)
+        sudo yum install -y httpd php php-cli php-curl php-zip curl
+        ;;
+    fedora)
+        sudo dnf install -y httpd php php-cli php-curl php-zip curl
+        ;;
+esac
 
 # 配置防火墙
 echo "正在配置防火墙..."
-if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
-    sudo ufw allow $PORT/tcp
-    sudo ufw enable
-
-elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
-    sudo firewall-cmd --permanent --add-port=$PORT/tcp
-    sudo firewall-cmd --reload
-
-elif [ "$OS_NAME" == "fedora" ]; then
-    sudo firewall-cmd --add-port=$PORT/tcp --permanent
-    sudo firewall-cmd --reload
-fi
+case "$OS_NAME" in
+    ubuntu|debian)
+        sudo ufw allow $PORT/tcp
+        sudo ufw enable
+        ;;
+    centos|rhel)
+        sudo firewall-cmd --permanent --add-port=$PORT/tcp
+        sudo firewall-cmd --reload
+        ;;
+    fedora)
+        sudo firewall-cmd --add-port=$PORT/tcp --permanent
+        sudo firewall-cmd --reload
+        ;;
+esac
 
 # 更新 Apache 配置文件，监听自定义端口
 echo "正在更新 Apache 配置文件..."
 update_apache_config() {
-    if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
-        # 检查端口是否已经在配置文件中
-        if ! grep -q "Listen $PORT" /etc/apache2/ports.conf; then
-            sudo tee -a /etc/apache2/ports.conf > /dev/null <<EOL
+    case "$OS_NAME" in
+        ubuntu|debian)
+            # 检查端口是否已经在配置文件中
+            if ! grep -q "Listen $PORT" /etc/apache2/ports.conf; then
+                sudo tee -a /etc/apache2/ports.conf > /dev/null <<EOL
 Listen $PORT
 EOL
-        fi
-
-    elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
-        # 检查端口是否已经在配置文件中
-        if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
-            sudo tee -a /etc/httpd/conf/httpd.conf > /dev/null <<EOL
+            fi
+            ;;
+        centos|rhel|fedora)
+            # 检查端口是否已经在配置文件中
+            if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
+                sudo tee -a /etc/httpd/conf/httpd.conf > /dev/null <<EOL
 Listen $PORT
 EOL
-        fi
-    fi
+            fi
+            ;;
+    esac
 }
 
 # 调用更新 Apache 配置文件的函数
@@ -159,8 +165,9 @@ update_apache_config
 
 # 创建虚拟主机配置
 echo "正在创建虚拟主机配置..."
-if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
-    sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
+case "$OS_NAME" in
+    ubuntu|debian)
+        sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
 <VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot /var/www/html/telegram_update
@@ -174,13 +181,13 @@ if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     </Directory>
 </VirtualHost>
 EOL
-    sudo a2ensite telegram_update
-    sudo a2enmod php
-    sudo a2enmod mpm_prefork
-    sudo systemctl restart apache2
-
-elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
-    sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
+        sudo a2ensite telegram_update
+        sudo a2enmod php
+        sudo a2enmod mpm_prefork
+        sudo systemctl restart apache2
+        ;;
+    centos|rhel|fedora)
+        sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
 <VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot /var/www/html/telegram_update
@@ -194,8 +201,9 @@ elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "
     </Directory>
 </VirtualHost>
 EOL
-    sudo systemctl restart httpd
-fi
+        sudo systemctl restart httpd
+        ;;
+esac
 
 # 创建安全目录存放敏感信息
 echo "正在创建安全目录存放敏感信息..."
