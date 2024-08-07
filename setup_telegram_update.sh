@@ -34,7 +34,6 @@ echo "用户名: $USERNAME"
 echo "密码: [隐藏]"
 echo "域名: $DOMAIN"
 
-
 # 系统识别和更新
 echo "正在识别操作系统..."
 if [ -f /etc/os-release ]; then
@@ -47,9 +46,6 @@ else
 fi
 
 echo "操作系统: $OS_NAME $OS_VERSION"
-
-# 安装和更新系统
-echo "正在更新系统并安装 Docker..."
 
 # 安装 Docker
 install_docker() {
@@ -110,7 +106,6 @@ install_docker() {
 # 调用安装 Docker 的函数
 install_docker
 
-
 # 安装 Apache 和 PHP
 echo "正在安装 Apache 和 PHP..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
@@ -165,6 +160,7 @@ update_apache_config
 # 创建虚拟主机配置
 echo "正在创建虚拟主机配置..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+    sudo mkdir -p /var/www/html/telegram_update
     sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
 <VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
@@ -180,11 +176,12 @@ if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
 </VirtualHost>
 EOL
     sudo a2ensite telegram_update.conf
-    sudo a2enmod php7.4
+    sudo a2enmod php
     sudo a2enmod mpm_prefork
     sudo systemctl restart apache2
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
+    sudo mkdir -p /var/www/html/telegram_update
     sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
 <VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
@@ -201,6 +198,7 @@ elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "
 EOL
     sudo systemctl restart httpd
 fi
+
 
 # 创建安全目录存放敏感信息
 echo "正在创建安全目录存放敏感信息..."
