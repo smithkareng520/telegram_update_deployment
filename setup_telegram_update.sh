@@ -25,18 +25,23 @@ DOMAIN=${INPUT_DOMAIN:-$DEFAULT_DOMAIN}
 
 # 检查端口是否被占用的函数
 check_port() {
-    while ss -tuln | grep ":$1\b" >/dev/null; do
-        echo "错误: 端口 $1 已被占用，请输入一个不同的端口。"
-        read -p "$2" NEW_PORT
-        eval "$3=\${NEW_PORT:-$4}"
+    local port=$1
+    local prompt=$2
+    local variable=$3
+
+    while netstat -tuln | grep ":$port\b" >/dev/null; do
+        echo "错误: 端口 $port 已被占用，请输入一个不同的端口。"
+        read -p "$prompt" NEW_PORT
+        eval "$variable=\${NEW_PORT:-$port}"
+        port=${NEW_PORT:-$port}
     done
 }
 
 # 检查 Apache 端口是否被占用
-check_port $APACHE_PORT "Apache 端口号 [默认: $DEFAULT_APACHE_PORT]: " APACHE_PORT $DEFAULT_APACHE_PORT
+check_port $APACHE_PORT "Apache 端口号 [默认: $DEFAULT_APACHE_PORT]: " APACHE_PORT
 
 # 检查 MTProto 代理端口是否被占用
-check_port $MT_PROTO_PORT "MTProto 代理外部端口号 [默认: $DEFAULT_MT_PROTO_PORT]: " MT_PROTO_PORT $DEFAULT_MT_PROTO_PORT
+check_port $MT_PROTO_PORT "MTProto 代理外部端口号 [默认: $DEFAULT_MT_PROTO_PORT]: " MT_PROTO_PORT
 
 # 显示配置
 echo "使用的配置如下："
@@ -182,7 +187,7 @@ EOL
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot $vhost_dir
     ErrorLog logs/error_log
-    CustomLog logs/access_log combined
+    CustomLog logs/access_log common
 
     <Directory $vhost_dir>
         Options Indexes FollowSymLinks
@@ -199,7 +204,7 @@ EOL
 # 创建虚拟主机配置
 create_vhost_config
 
-# 创建安全目录存放敏感信息
+# 创建安全目录
 echo "正在创建安全目录存放敏感信息..."
 sudo mkdir -p /var/private_data
 sudo chown -R www-data:www-data /var/private_data
