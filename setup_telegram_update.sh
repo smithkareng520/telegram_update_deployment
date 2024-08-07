@@ -287,9 +287,8 @@ sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 (crontab -l 2>/dev/null; echo "*/5 * * * * /var/www/html/telegram_update/check_and_download_telegram.sh") | crontab -
 
 # 提供访问链接
-IP_ADDRESS=$(hostname -I | awk '{print $1}')
 echo "设置完成。您可以通过以下链接访问您的应用："
-echo "http://$IP_ADDRESS:$PORT/index.php"
+echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
 
 # 假设之前已经完成了 Docker 的安装和配置
 
@@ -306,6 +305,8 @@ sleep 5
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
 tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
 
+# 检查目录是否存在，不存在则创建
+mkdir -p /var/private_data
 
 # 保存链接到文件
 echo "TG Link: $tg_link" > /var/private_data/proxy_links.txt
