@@ -277,6 +277,7 @@ echo "设置完成。您可以通过以下链接访问您的应用："
 echo "http://$(hostname -I | awk '{print $1}'):$APACHE_PORT"
 
 # Docker 部署 MTProto 代理
+
 echo "正在部署 MTProto 代理..."
 if [ "$(docker ps -q -f name=mtproto-proxy)" ]; then
     echo "MTProto 代理容器已存在，停止并删除现有容器..."
@@ -285,8 +286,7 @@ if [ "$(docker ps -q -f name=mtproto-proxy)" ]; then
 fi
 
 docker pull telegrammessenger/proxy
-docker run -d -p $MT_PROTO_PORT:$MT_PROTO_PORT --name mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
-
+docker run -d -p443:443 --name mtproto-proxy --restart=always -v proxy-config:/data -e SECRET=00baadf00d15abad1deaa51sbaadcafe telegrammessenger/proxy:latest
 # 提取代理链接
 sleep 5
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
