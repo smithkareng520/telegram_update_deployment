@@ -8,6 +8,12 @@ DEFAULT_USERNAME="admin"
 DEFAULT_PASSWORD="admin"
 DEFAULT_DOMAIN="yourdomain.com"
 
+# 使用默认值如果用户没有输入
+PORT=${PORT:-$DEFAULT_PORT}
+USERNAME=${USERNAME:-$DEFAULT_USERNAME}
+PASSWORD=${PASSWORD:-$DEFAULT_PASSWORD}
+DOMAIN=${DOMAIN:-$DEFAULT_DOMAIN}
+
 # 读取用户输入
 read -p "请输入Apache端口号 [默认: $DEFAULT_PORT]: " PORT
 read -p "请输入MTProto代理端口号: " MT_PROTO_PORT
@@ -16,11 +22,6 @@ read -sp "请输入密码 [默认: $DEFAULT_PASSWORD]: " PASSWORD
 echo
 read -p "请输入您的域名 [默认: $DEFAULT_DOMAIN]: " DOMAIN
 
-# 使用默认值如果用户没有输入
-PORT=${PORT:-$DEFAULT_PORT}
-USERNAME=${USERNAME:-$DEFAULT_USERNAME}
-PASSWORD=${PASSWORD:-$DEFAULT_PASSWORD}
-DOMAIN=${DOMAIN:-$DEFAULT_DOMAIN}
 
 # 显示用户输入的配置
 echo "配置如下："
