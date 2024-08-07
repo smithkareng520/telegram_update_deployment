@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 # 定义默认值
 DEFAULT_PORT=81
 DEFAULT_USERNAME="admin"
@@ -15,13 +13,18 @@ PASSWORD=${PASSWORD:-$DEFAULT_PASSWORD}
 DOMAIN=${DOMAIN:-$DEFAULT_DOMAIN}
 
 # 读取用户输入
-read -p "请输入Apache端口号 [默认: $DEFAULT_PORT]: " PORT
+read -p "请输入Apache端口号 [默认: $DEFAULT_PORT]: " INPUT_PORT
 read -p "请输入MTProto代理端口号: " MT_PROTO_PORT
-read -p "请输入用户名 [默认: $DEFAULT_USERNAME]: " USERNAME
-read -sp "请输入密码 [默认: $DEFAULT_PASSWORD]: " PASSWORD
+read -p "请输入用户名 [默认: $DEFAULT_USERNAME]: " INPUT_USERNAME
+read -sp "请输入密码 [默认: $DEFAULT_PASSWORD]: " INPUT_PASSWORD
 echo
-read -p "请输入您的域名 [默认: $DEFAULT_DOMAIN]: " DOMAIN
+read -p "请输入您的域名 [默认: $DEFAULT_DOMAIN]: " INPUT_DOMAIN
 
+# 使用用户输入的值，如果没有输入则使用默认值
+PORT=${INPUT_PORT:-$PORT}
+USERNAME=${INPUT_USERNAME:-$USERNAME}
+PASSWORD=${INPUT_PASSWORD:-$PASSWORD}
+DOMAIN=${INPUT_DOMAIN:-$DOMAIN}
 
 # 显示用户输入的配置
 echo "配置如下："
@@ -30,6 +33,7 @@ echo "MTProto代理端口号: $MT_PROTO_PORT"
 echo "用户名: $USERNAME"
 echo "密码: [隐藏]"
 echo "域名: $DOMAIN"
+
 
 # 系统识别和更新
 echo "正在识别操作系统..."
