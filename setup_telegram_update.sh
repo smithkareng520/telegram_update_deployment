@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # 定义默认值
 DEFAULT_PORT=80
 DEFAULT_MT_PROTO_PORT=443
@@ -46,8 +45,6 @@ echo "操作系统: $OS_NAME $OS_VERSION"
 
 # 安装和更新系统
 echo "正在更新系统并安装 Docker..."
-
-# 安装 Docker
 install_docker() {
     if [ "$OS_NAME" == "centos" ]; then
         sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
@@ -90,7 +87,7 @@ install_docker() {
         sudo docker run hello-world
 
     elif [ "$OS_NAME" == "fedora" ]; then
-        sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
+        sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine
         sudo dnf -y install dnf-plugins-core
         sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
         sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -103,9 +100,7 @@ install_docker() {
     fi
 }
 
-# 调用安装 Docker 的函数
 install_docker
-
 
 # 安装 Apache 和 PHP
 echo "正在安装 Apache 和 PHP..."
@@ -198,7 +193,7 @@ fi
 
 # 创建安全目录存放敏感信息
 echo "正在创建安全目录存放敏感信息..."
-rm -rf /var/private_data
+sudo rm -rf /var/private_data
 sudo mkdir -p /var/private_data
 sudo chown -R www-data:www-data /var/private_data
 sudo chmod -R 700 /var/private_data
@@ -290,11 +285,9 @@ sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 echo "设置完成。您可以通过以下链接访问您的应用："
 echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
 
-
-#删除旧容器
+# 删除旧容器
 docker stop mtproto-proxy
 docker rm mtproto-proxy
-
 
 # 拉取 Telegram 代理 Docker 镜像
 docker pull telegrammessenger/proxy
@@ -312,6 +305,12 @@ echo "Docker container started with SECRET=$SECRET"
 
 # 等待容器启动
 sleep 5
+
+# 检查容器状态
+if ! docker ps | grep -q mtproto-proxy; then
+    echo "Docker container failed to start."
+    exit 1
+fi
 
 # 提取 tg:// 和 t.me 链接
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
