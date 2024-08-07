@@ -297,7 +297,6 @@ docker pull telegrammessenger/proxy
 SECRET=$(head -c 16 /dev/urandom | xxd -ps)
 
 # 启动容器
-docker run -d -p$MT_PROTO_PORT: 
 docker run -d -p$MT_PROTO_PORT:$MT_PROTO_PORT --name=mtproto-proxy --restart=always -v proxy-config:/data -e SECRET=$SECRET telegrammessenger/proxy:latest
 
 
