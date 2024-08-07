@@ -292,16 +292,24 @@ sleep 5
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
 tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
 
+# 获取主机 IP 地址和外部端口
+HOST_IP=$(hostname -I | awk '{print $1}')
+EXTERNAL_PORT=$MT_PROTO_PORT  # 使用脚本中的 MTProto 代理外部端口号
+
+# 替换链接中的端口为外部端口号
+tg_link_external="tg://proxy?server=${HOST_IP}&port=${EXTERNAL_PORT}&secret=${SECRET}"
+tme_link_external="https://t.me/proxy?server=${HOST_IP}&port=${EXTERNAL_PORT}&secret=${SECRET}"
+
 # 保存链接到文件
 echo "保存代理链接到文件..."
 sudo tee /var/private_data/proxy_links.txt > /dev/null <<EOL
-TG Link: $tg_link
-T.me Link: $tme_link
+TG Link: $tg_link_external
+T.me Link: $tme_link_external
 EOL
 
 # 输出代理链接
-echo "TG 代理链接: $tg_link"
-echo "T.me 代理链接: $tme_link"
+echo "TG 代理链接: $tg_link_external"
+echo "T.me 代理链接: $tme_link_external"
 
 # 设置每天重启 MTProto 代理容器的定时任务
 echo "设置每天重启 MTProto 代理容器的定时任务..."
