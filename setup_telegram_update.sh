@@ -293,9 +293,14 @@ docker rm mtproto-proxy
 # 拉取 Telegram 代理 Docker 镜像
 docker pull telegrammessenger/proxy
 
-# 启动容器
-docker run -d -p$MT_PROTO_PORT:$MT_PROTO_PORT --name=mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
+# 生成随机秘钥
+SECRET=$(head -c 16 /dev/urandom | xxd -ps)
 
+# 启动容器
+docker run -d -pMT_PROTO_PORT:$MT_PROTO_PORT -v proxy-config:/data -e SECRET=$SECRET telegrammessenger/proxy:latest
+
+# 输出生成的秘钥
+echo "Docker container started with SECRET=$SECRET"
 
 # 等待容器启动
 sleep 5
