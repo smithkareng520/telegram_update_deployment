@@ -297,7 +297,8 @@ docker pull telegrammessenger/proxy
 SECRET=$(head -c 16 /dev/urandom | xxd -ps)
 
 # 启动容器
-docker run -d -pMT_PROTO_PORT:$MT_PROTO_PORT -v proxy-config:/data -e SECRET=$SECRET telegrammessenger/proxy:latest
+docker run -d -p $MT_PROTO_PORT:$MT_PROTO_PORT -v proxy-config:/data -e SECRET=$SECRET telegrammessenger/proxy:latest
+
 
 # 输出生成的秘钥
 echo "Docker container started with SECRET=$SECRET"
