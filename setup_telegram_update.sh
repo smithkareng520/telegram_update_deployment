@@ -122,14 +122,17 @@ fi
 echo "正在配置防火墙..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     sudo ufw allow $PORT/tcp
+    sudo ufw allow $MT_PROTO_PORT/tcp
     sudo ufw enable
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
     sudo firewall-cmd --permanent --add-port=$PORT/tcp
+    sudo firewall-cmd --permanent --add-port=$MT_PROTO_PORT/tcp
     sudo firewall-cmd --reload
 
 elif [ "$OS_NAME" == "fedora" ]; then
     sudo firewall-cmd --add-port=$PORT/tcp --permanent
+    sudo firewall-cmd --add-port=$MT_PROTO_PORT/tcp --permanent
     sudo firewall-cmd --reload
 fi
 
@@ -138,15 +141,17 @@ echo "正在更新 Apache 配置文件..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     sudo tee /etc/apache2/ports.conf > /dev/null <<EOL
 Listen 80
-Listen 443
+Listen 442
 Listen $PORT
+Listen $MT_PROTO_PORT
 EOL
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
     sudo tee /etc/httpd/conf/httpd.conf > /dev/null <<EOL
 Listen 80
-Listen 443
+Listen 442
 Listen $PORT
+Listen $MT_PROTO_PORT
 EOL
 fi
 
