@@ -299,6 +299,9 @@ SECRET=$(head -c 16 /dev/urandom | xxd -ps)
 # 启动容器
 docker run -d -p $MT_PROTO_PORT:$MT_PROTO_PORT -v proxy-config:/data -e SECRET=$SECRET telegrammessenger/proxy:latest
 
+rm -rf /var/private_data
+
+mkdir -p /var/private_data
 
 # 输出生成的秘钥
 echo "Docker container started with SECRET=$SECRET"
@@ -309,11 +312,6 @@ sleep 5
 # 提取 tg:// 和 t.me 链接
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
 tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
-
-rm -rf /var/private_data
-mkdir -p /var/private_data
-
-mkdir -p /var/private_data
 
 # 保存链接到文件
 echo "TG Link: $tg_link" > /var/private_data/proxy_links.txt
