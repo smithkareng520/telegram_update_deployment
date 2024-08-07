@@ -198,6 +198,7 @@ fi
 
 # 创建安全目录存放敏感信息
 echo "正在创建安全目录存放敏感信息..."
+rm -rf /var/private_data
 sudo mkdir -p /var/private_data
 sudo chown -R www-data:www-data /var/private_data
 sudo chmod -R 700 /var/private_data
@@ -303,8 +304,6 @@ SECRET=$(head -c 16 /dev/urandom | xxd -ps)
 
 # 启动容器
 docker run -d -p $MT_PROTO_PORT:$MT_PROTO_PORT -v proxy-config:/data -e SECRET=$SECRET telegrammessenger/proxy:latest
-
-rm -rf /var/private_data
 
 mkdir -p /var/private_data
 
