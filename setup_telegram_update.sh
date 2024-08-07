@@ -9,7 +9,7 @@ DEFAULT_DOMAIN="yourdomain.com"
 
 # 读取用户输入
 read -p "请输入Apache端口号 [默认: $DEFAULT_PORT]: " PORT
-read -p "请输入MTProto代理端口号: " MT_PROTO_PORT
+read -p "请输入MTProto代理端口号 [默认: $DEFAULT_MT_PROTO_PORT]: " MT_PROTO_PORT
 read -p "请输入用户名 [默认: $DEFAULT_USERNAME]: " USERNAME
 read -sp "请输入密码 [默认: $DEFAULT_PASSWORD]: " PASSWORD
 echo
@@ -55,11 +55,13 @@ install_docker() {
         ubuntu|debian)
             sudo apt-get remove -y docker.io docker-doc docker-compose podman-docker containerd runc
             sudo apt-get update
-            sudo apt-get install -y ca-certificates curl
+            sudo apt-get install -y ca-certificates curl gnupg
             sudo install -m 0755 -d /etc/apt/keyrings
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/keyrings/docker.asc
-            sudo chmod a+r /etc/apt/keyrings/docker.asc
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/keyrings/docker.gpg > /dev/null
+            sudo chmod a+r /etc/apt/keyrings/docker.gpg
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+              $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             ;;
@@ -113,10 +115,12 @@ echo "正在配置防火墙..."
 case "$OS_NAME" in
     ubuntu|debian)
         sudo ufw allow $PORT/tcp
-        sudo ufw enable
+        sudo ufw allow $MT_PROTO_PORT/tcp
+        sudo ufw --force enable
         ;;
     centos|rhel|fedora)
         sudo firewall-cmd --permanent --add-port=$PORT/tcp
+        sudo firewall-cmd --permanent --add-port=$MT_PROTO_PORT/tcp
         sudo firewall-cmd --reload
         ;;
 esac
@@ -198,6 +202,7 @@ EOL
 
 # 创建和配置下载脚本
 echo "正在创建 check_and_download_telegram.sh 脚本..."
+sudo mkdir -p /var/www/html/telegram_update
 sudo tee /var/www/html/telegram_update/check_and_download_telegram.sh > /dev/null <<EOL
 #!/bin/bash
 
@@ -229,7 +234,7 @@ for URL in "\${URLS[@]}"; do
     if [ ! -f "\$FILE_PATH" ]; then
         echo "\$(date): \$FILE_NAME not found. Downloading initial version..." >> "\$LOG_FILE"
         if curl -s -L -o "\$FILE_PATH" "\$URL"; then
-            echo "\$(date): Initial download completed successfully for \$FILE_NAME." >> "\$LOG_FILE"
+            echo "\$(date): Downloaded \$FILE_NAME successfully." >> "\$LOG_FILE"
         else
             echo "\$(date): Error occurred while downloading \$FILE_NAME." >> "\$LOG_FILE"
         fi
@@ -278,16 +283,16 @@ echo "设置完成。您可以通过以下链接访问您的应用："
 echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
 
 # Docker 部署 MTProto 代理
-
 echo "正在部署 MTProto 代理..."
 if [ "$(docker ps -q -f name=mtproto-proxy)" ]; then
     echo "MTProto 代理容器已存在，停止并删除现有容器..."
     docker stop mtproto-proxy
     docker rm mtproto-proxy
 fi
-sleep 5
+
 docker pull telegrammessenger/proxy
-docker run -d -p$MT_PROTO_PORT:443 --name mtproto-proxy --restart=always -v proxy-config:/data -e SECRET=ab9b40530c90ef7bd07d892802008734 telegrammessenger/proxy:latest
+docker run -d -p $MT_PROTO_PORT:443 --name mtproto-proxy --restart=always -v proxy-config:/data -e SECRET=ab9b40530c90ef7bd07d892802008734 telegrammessenger/proxy:latest
+
 # 提取代理链接
 sleep 5
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
