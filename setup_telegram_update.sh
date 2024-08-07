@@ -123,14 +123,17 @@ fi
 echo "正在配置防火墙..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     sudo ufw allow $PORT/tcp
+    sudo ufw allow $MT_PROTO_PORT/tcp
     sudo ufw enable
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
     sudo firewall-cmd --permanent --add-port=$PORT/tcp
+    sudo firewall-cmd --permanent --add-port=$MT_PROTO_PORT/tcp
     sudo firewall-cmd --reload
 
 elif [ "$OS_NAME" == "fedora" ]; then
     sudo firewall-cmd --add-port=$PORT/tcp --permanent
+    sudo firewall-cmd --add-port=$MT_PROTO_PORT/tcp --permanent
     sudo firewall-cmd --reload
 fi
 
@@ -141,6 +144,7 @@ if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
 Listen 80
 Listen 443
 Listen $PORT
+Listen $MT_PROTO_PORT
 EOL
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
@@ -148,6 +152,7 @@ elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "
 Listen 80
 Listen 443
 Listen $PORT
+Listen $MT_PROTO_PORT
 EOL
 fi
 
