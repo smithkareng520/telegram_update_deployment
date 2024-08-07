@@ -4,8 +4,8 @@
 
 # 定义默认值
 DEFAULT_PORT=81
-DEFAULT_USERNAME="dearella"
-DEFAULT_PASSWORD="KSXJY123456"
+DEFAULT_USERNAME="admin"
+DEFAULT_PASSWORD="admin"
 DEFAULT_DOMAIN="yourdomain.com"
 
 # 读取用户输入
