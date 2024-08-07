@@ -59,14 +59,25 @@ install_docker() {
             sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             sudo systemctl start docker
             ;;
-        debian|ubuntu)
+        debian)
             sudo apt-get remove -y docker.io docker-doc docker-compose podman-docker containerd runc
             sudo apt-get update
             sudo apt-get install -y ca-certificates curl
             sudo install -m 0755 -d /etc/apt/keyrings
-            sudo curl -fsSL https://download.docker.com/linux/$(lsb_release -c | awk '{print $2}')/gpg -o /etc/apt/keyrings/docker.asc
+            sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
             sudo chmod a+r /etc/apt/keyrings/docker.asc
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/$(lsb_release -c | awk '{print $2}') stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(lsb_release -c | awk '{print $2}') stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            ;;
+        ubuntu)
+            sudo apt-get remove -y docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc
+            sudo apt-get update
+            sudo apt-get install -y ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -c | awk '{print $2}') stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             ;;
@@ -314,5 +325,3 @@ echo "T.me 代理链接: $tme_link_external"
 # 设置每天重启 MTProto 代理容器的定时任务
 echo "设置每天重启 MTProto 代理容器的定时任务..."
 (crontab -l 2>/dev/null; echo "0 0 * * * docker restart mtproto-proxy") | crontab -
-
-echo "所有设置完成。"
