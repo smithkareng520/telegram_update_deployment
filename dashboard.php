@@ -201,6 +201,7 @@
     <div class="logout">
       <a href="logout.php">Logout</a>
     </div>
+    
     <main>
       <div class="grid-container">
         <div class="card">
@@ -245,6 +246,10 @@
         <div class="heart"></div>
       </div> <!-- Hearts display -->
     </main>
+  </div>
+
+  <div class="link">
+      <a href="link.php">Link</a>
   </div>
   <script>
     let hearts = 5;
