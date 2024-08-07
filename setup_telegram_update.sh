@@ -306,8 +306,6 @@ sleep 5
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
 tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
 
-# 检查目录是否存在，不存在则创建
-mkdir -p /var/private_data
 
 # 保存链接到文件
 echo "TG Link: $tg_link" > /var/private_data/proxy_links.txt
