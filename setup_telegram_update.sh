@@ -25,7 +25,7 @@ DOMAIN=${INPUT_DOMAIN:-$DEFAULT_DOMAIN}
 
 # 检查端口是否被占用的函数
 check_port() {
-    while netstat -tuln | grep ":$1\b" >/dev/null; do
+    while ss -tuln | grep ":$1\b" >/dev/null; do
         echo "错误: 端口 $1 已被占用，请输入一个不同的端口。"
         read -p "$2" NEW_PORT
         eval "$3=\${NEW_PORT:-$4}"
