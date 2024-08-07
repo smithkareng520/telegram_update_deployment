@@ -132,23 +132,7 @@ update_apache_config() {
             if ! grep -q "Listen $PORT" /etc/apache2/ports.conf; then
                 echo "Listen $PORT" | sudo tee -a /etc/apache2/ports.conf
             fi
-            ;;
-        centos|rhel|fedora)
-            if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
-                echo "Listen $PORT" | sudo tee -a /etc/httpd/conf/httpd.conf
-            fi
-            ;;
-    esac
-}
-
-# 调用更新 Apache 配置文件的函数
-update_apache_config
-
-# 创建虚拟主机配置
-echo "正在创建虚拟主机配置..."
-case "$OS_NAME" in
-    ubuntu|debian)
-sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
+            sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
 <VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot /var/www/html/telegram_update
@@ -168,9 +152,12 @@ EOL
         sudo a2enmod php
         sudo a2enmod mpm_prefork
         sudo systemctl restart apache2
-        ;;
-    centos|rhel|fedora)
-sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
+            ;;
+        centos|rhel|fedora)
+            if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
+                echo "Listen $PORT" | sudo tee -a /etc/httpd/conf/httpd.conf
+            fi
+            sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
 <VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot /var/www/html/telegram_update
@@ -184,9 +171,19 @@ sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
     </Directory>
 </VirtualHost>
 EOL
-        sudo systemctl restart httpd
-        ;;
-esac
+            sudo systemctl restart httpd
+            ;;
+    esac
+}
+
+# 调用更新 Apache 配置文件的函数
+update_apache_config
+
+# 创建安全目录存放敏感信息
+echo "正在创建安全目录存放敏感信息..."
+sudo mkdir -p /var/private_data
+sudo chown -R www-data:www-data /var/private_data
+sudo chmod -R 700 /var/private_data
 
 # 创建安全目录存放敏感信息
 echo "正在创建安全目录存放敏感信息..."
