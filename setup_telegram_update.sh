@@ -52,7 +52,7 @@ install_docker() {
 
     echo "正在安装 Docker..."
     case "$OS_NAME" in
-        ubuntu)
+        ubuntu|debian)
             sudo apt-get remove -y docker.io docker-doc docker-compose podman-docker containerd runc
             sudo apt-get update
             sudo apt-get install -y ca-certificates curl
@@ -62,6 +62,22 @@ install_docker() {
             echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            ;;
+        centos|rhel)
+            sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+            sudo yum install -y yum-utils
+            sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+            sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            sudo systemctl start docker
+            sudo systemctl enable docker
+            ;;
+        fedora)
+            sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+            sudo dnf -y install dnf-plugins-core
+            sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+            sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            sudo systemctl start docker
+            sudo systemctl enable docker
             ;;
         *)
             echo "不支持的操作系统。"
@@ -82,9 +98,13 @@ case "$OS_NAME" in
         ;;
     centos|rhel)
         sudo yum install -y httpd php php-cli php-curl php-zip curl
+        sudo systemctl start httpd
+        sudo systemctl enable httpd
         ;;
     fedora)
         sudo dnf install -y httpd php php-cli php-curl php-zip curl
+        sudo systemctl start httpd
+        sudo systemctl enable httpd
         ;;
 esac
 
@@ -95,15 +115,27 @@ case "$OS_NAME" in
         sudo ufw allow $PORT/tcp
         sudo ufw enable
         ;;
-    centos|rhel)
+    centos|rhel|fedora)
         sudo firewall-cmd --permanent --add-port=$PORT/tcp
         sudo firewall-cmd --reload
         ;;
-    fedora)
-        sudo firewall-cmd --add-port=$PORT/tcp --permanent
-        sudo firewall-cmd --reload
-        ;;
 esac
+
+# 更新 Apache 配置文件
+update_apache_config() {
+    case "$OS_NAME" in
+        ubuntu|debian)
+            if ! grep -q "Listen $PORT" /etc/apache2/ports.conf; then
+                echo "Listen $PORT" | sudo tee -a /etc/apache2/ports.conf
+            fi
+            ;;
+        centos|rhel|fedora)
+            if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
+                echo "Listen $PORT" | sudo tee -a /etc/httpd/conf/httpd.conf
+            fi
+            ;;
+    esac
+}
 
 # 调用更新 Apache 配置文件的函数
 update_apache_config
@@ -127,14 +159,14 @@ sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
 </VirtualHost>
 EOL
         # 启用站点配置和所需模块
-echo "正在启用站点配置和所需模块..."
-sudo a2ensite telegram_update
-sudo a2enmod php
-sudo a2enmod mpm_prefork
-sudo systemctl restart apache2
+        echo "正在启用站点配置和所需模块..."
+        sudo a2ensite telegram_update
+        sudo a2enmod php
+        sudo a2enmod mpm_prefork
+        sudo systemctl restart apache2
         ;;
     centos|rhel|fedora)
-        sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
+sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
 <VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot /var/www/html/telegram_update
