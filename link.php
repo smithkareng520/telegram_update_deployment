@@ -1,4 +1,10 @@
 <?php
+session_start();
+if (!isset($_SESSION['loggedin']) || !$_SESSION['loggedin']) {
+    header('Location: index.php');
+    exit();
+}
+
 // 读取文件内容
 $filePath = '/var/private_data/proxy_links.txt';
 $fileContent = '';
