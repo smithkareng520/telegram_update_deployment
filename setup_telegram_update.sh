@@ -1,30 +1,46 @@
 #!/bin/bash
 
 # 设置默认值
-DEFAULT_PORT=81
+DEFAULT_APACHE_PORT=81
+DEFAULT_MT_PROTO_PORT=443
 DEFAULT_USERNAME="admin"
 DEFAULT_PASSWORD="admin"
 DEFAULT_DOMAIN="yourdomain.com"
 
 # 用户输入提示
 echo "请输入配置参数（按Enter键使用默认值）"
-read -p "Apache 端口号 [默认: $DEFAULT_PORT]: " INPUT_PORT
-read -p "MTProto 代理外部端口号 [默认: 443]: " MT_PROTO_PORT
+read -p "Apache 端口号 [默认: $DEFAULT_APACHE_PORT]: " INPUT_APACHE_PORT
+read -p "MTProto 代理外部端口号 [默认: $DEFAULT_MT_PROTO_PORT]: " INPUT_MT_PROTO_PORT
 read -p "用户名 [默认: $DEFAULT_USERNAME]: " INPUT_USERNAME
 read -sp "密码 [默认: $DEFAULT_PASSWORD]: " INPUT_PASSWORD
 echo
 read -p "域名 [默认: $DEFAULT_DOMAIN]: " INPUT_DOMAIN
 
 # 使用默认值或用户输入的值
-PORT=${INPUT_PORT:-$DEFAULT_PORT}
-MT_PROTO_PORT=${MT_PROTO_PORT:-443}
+APACHE_PORT=${INPUT_APACHE_PORT:-$DEFAULT_APACHE_PORT}
+MT_PROTO_PORT=${INPUT_MT_PROTO_PORT:-$DEFAULT_MT_PROTO_PORT}
 USERNAME=${INPUT_USERNAME:-$DEFAULT_USERNAME}
 PASSWORD=${INPUT_PASSWORD:-$DEFAULT_PASSWORD}
 DOMAIN=${INPUT_DOMAIN:-$DEFAULT_DOMAIN}
 
+# 检查端口是否被占用的函数
+check_port() {
+    while netstat -tuln | grep ":$1\b" >/dev/null; do
+        echo "错误: 端口 $1 已被占用，请输入一个不同的端口。"
+        read -p "$2" NEW_PORT
+        eval "$3=\${NEW_PORT:-$4}"
+    done
+}
+
+# 检查 Apache 端口是否被占用
+check_port $APACHE_PORT "Apache 端口号 [默认: $DEFAULT_APACHE_PORT]: " APACHE_PORT $DEFAULT_APACHE_PORT
+
+# 检查 MTProto 代理端口是否被占用
+check_port $MT_PROTO_PORT "MTProto 代理外部端口号 [默认: $DEFAULT_MT_PROTO_PORT]: " MT_PROTO_PORT $DEFAULT_MT_PROTO_PORT
+
 # 显示配置
 echo "使用的配置如下："
-echo "Apache 端口号: $PORT"
+echo "Apache 端口号: $APACHE_PORT"
 echo "MTProto 代理外部端口号: $MT_PROTO_PORT"
 echo "用户名: $USERNAME"
 echo "域名: $DOMAIN"
@@ -49,7 +65,7 @@ install_docker() {
         centos|rhel)
             sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
             sudo yum install -y yum-utils
-            sudo yum-config-manager --add-repo https://download.docker.com/linux/$OS_NAME/docker-ce.repo
+            sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
             sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             ;;
         ubuntu|debian)
@@ -63,7 +79,7 @@ install_docker() {
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             ;;
         fedora)
-            sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
+            sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
             sudo dnf -y install dnf-plugins-core
             sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
             sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -97,10 +113,10 @@ fi
 # 配置防火墙
 echo "正在配置防火墙..."
 if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
-    sudo ufw allow $PORT/tcp
+    sudo ufw allow $APACHE_PORT/tcp
     sudo ufw reload
 elif [[ "$OS_NAME" == "centos" || "$OS_NAME" == "rhel" || "$OS_NAME" == "fedora" ]]; then
-    sudo firewall-cmd --permanent --add-port=$PORT/tcp
+    sudo firewall-cmd --permanent --add-port=$APACHE_PORT/tcp
     sudo firewall-cmd --reload
 else
     echo "不支持的操作系统，无法配置防火墙。"
@@ -110,12 +126,12 @@ fi
 update_apache_config() {
     echo "正在更新 Apache 配置文件..."
     if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
-        if ! grep -q "Listen $PORT" /etc/apache2/ports.conf; then
-            sudo sed -i "\$aListen $PORT" /etc/apache2/ports.conf
+        if ! grep -q "Listen $APACHE_PORT" /etc/apache2/ports.conf; then
+            sudo sed -i "\$aListen $APACHE_PORT" /etc/apache2/ports.conf
         fi
     elif [[ "$OS_NAME" == "centos" || "$OS_NAME" == "rhel" || "$OS_NAME" == "fedora" ]]; then
-        if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
-            sudo sed -i "\$aListen $PORT" /etc/httpd/conf/httpd.conf
+        if ! grep -q "Listen $APACHE_PORT" /etc/httpd/conf/httpd.conf; then
+            sudo sed -i "\$aListen $APACHE_PORT" /etc/httpd/conf/httpd.conf
         fi
     fi
 }
@@ -135,7 +151,7 @@ create_vhost_config() {
         if [ ! -f $conf_file ]; then
             sudo mkdir -p $vhost_dir
             sudo tee $conf_file > /dev/null <<EOL
-<VirtualHost *:$PORT>
+<VirtualHost *:$APACHE_PORT>
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot $vhost_dir
     ErrorLog \${APACHE_LOG_DIR}/error.log
@@ -160,7 +176,7 @@ EOL
         if [ ! -f $conf_file ]; then
             sudo mkdir -p $vhost_dir
             sudo tee $conf_file > /dev/null <<EOL
-<VirtualHost *:$PORT>
+<VirtualHost *:$APACHE_PORT>
     ServerAdmin webmaster@$DOMAIN
     DocumentRoot $vhost_dir
     ErrorLog logs/error_log
@@ -259,7 +275,7 @@ sudo /var/www/html/telegram_update/check_and_download_telegram.sh
 
 # 提供访问链接
 echo "设置完成。您可以通过以下链接访问您的应用："
-echo "http://$(hostname -I | awk '{print $1}'):$PORT"
+echo "http://$(hostname -I | awk '{print $1}'):$APACHE_PORT"
 
 # Docker 部署 MTProto 代理
 echo "正在部署 MTProto 代理..."
