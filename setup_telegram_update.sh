@@ -179,8 +179,8 @@ if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     </Directory>
 </VirtualHost>
 EOL
-    sudo a2ensite telegram_update
-    sudo a2enmod php
+    sudo a2ensite telegram_update.conf
+    sudo a2enmod php7.4
     sudo a2enmod mpm_prefork
     sudo systemctl restart apache2
 
