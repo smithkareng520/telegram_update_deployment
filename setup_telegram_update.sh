@@ -1,16 +1,16 @@
 #!/bin/bash
 
 
+
 # 定义默认值
 DEFAULT_PORT=81
-DEFAULT_MT_PROTO_PORT=4443
-DEFAULT_USERNAME="admin"
-DEFAULT_PASSWORD="admin"
-DEFAULT_DOMAIN="domain.com"
+DEFAULT_USERNAME="dearella"
+DEFAULT_PASSWORD="KSXJY123456"
+DEFAULT_DOMAIN="yourdomain.com"
 
 # 读取用户输入
 read -p "请输入Apache端口号 [默认: $DEFAULT_PORT]: " PORT
-read -p "请输入MTProto代理端口号 [默认: $DEFAULT_MT_PROTO_PORT]: " MT_PROTO_PORT
+read -p "请输入MTProto代理端口号: " MT_PROTO_PORT
 read -p "请输入用户名 [默认: $DEFAULT_USERNAME]: " USERNAME
 read -sp "请输入密码 [默认: $DEFAULT_PASSWORD]: " PASSWORD
 echo
@@ -18,7 +18,6 @@ read -p "请输入您的域名 [默认: $DEFAULT_DOMAIN]: " DOMAIN
 
 # 使用默认值如果用户没有输入
 PORT=${PORT:-$DEFAULT_PORT}
-MT_PROTO_PORT=${MT_PROTO_PORT:-$DEFAULT_MT_PROTO_PORT}
 USERNAME=${USERNAME:-$DEFAULT_USERNAME}
 PASSWORD=${PASSWORD:-$DEFAULT_PASSWORD}
 DOMAIN=${DOMAIN:-$DEFAULT_DOMAIN}
@@ -139,14 +138,14 @@ echo "正在更新 Apache 配置文件..."
 if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     sudo tee /etc/apache2/ports.conf > /dev/null <<EOL
 Listen 80
-Listen 442
+Listen 443
 Listen $PORT
 EOL
 
 elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
     sudo tee /etc/httpd/conf/httpd.conf > /dev/null <<EOL
 Listen 80
-Listen 442
+Listen 443
 Listen $PORT
 EOL
 fi
@@ -284,25 +283,20 @@ sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 echo "设置完成。您可以通过以下链接访问您的应用："
 echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
 
-
-#删除旧容器
-docker stop mtproto-proxy
-docker rm mtproto-proxy
-
+# 假设之前已经完成了 Docker 的安装和配置
 
 # 拉取 Telegram 代理 Docker 镜像
 docker pull telegrammessenger/proxy
 
 # 启动容器
-docker run -d -p$MT_PROTO_PORT:$MT_PROTO_PORT --name=mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
-
+docker run -d -p$MT_PROTO_PORT:443 --name=mtproto-proxy --restart=always -v proxy-config:/data telegrammessenger/proxy:latest
 
 # 等待容器启动
 sleep 5
 
 # 提取 tg:// 和 t.me 链接
-tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
-tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
+tg_link=$(docker logs mtproto-proxy | grep -o 'tg://[^ ]*')
+tme_link=$(docker logs mtproto-proxy | grep -o 'https://t.me/[^ ]*')
 
 # 检查目录是否存在，不存在则创建
 mkdir -p /var/private_data
