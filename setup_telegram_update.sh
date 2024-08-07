@@ -127,23 +127,19 @@ case "$OS_NAME" in
 esac
 
 # 更新 Apache 配置文件，监听自定义端口
+
+# 更新 Apache 配置文件，监听自定义端口
 echo "正在更新 Apache 配置文件..."
 update_apache_config() {
     case "$OS_NAME" in
         ubuntu|debian)
-            # 检查端口是否已经在配置文件中
             if ! grep -q "Listen $PORT" /etc/apache2/ports.conf; then
-                sudo tee -a /etc/apache2/ports.conf > /dev/null <<EOL
-Listen $PORT
-EOL
+                echo "Listen $PORT" | sudo tee -a /etc/apache2/ports.conf
             fi
             ;;
         centos|rhel|fedora)
-            # 检查端口是否已经在配置文件中
             if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
-                sudo tee -a /etc/httpd/conf/httpd.conf > /dev/null <<EOL
-Listen $PORT
-EOL
+                echo "Listen $PORT" | sudo tee -a /etc/httpd/conf/httpd.conf
             fi
             ;;
     esac
@@ -171,7 +167,7 @@ case "$OS_NAME" in
 </VirtualHost>
 EOL
         sudo a2ensite telegram_update
-        sudo a2enmod php
+        sudo a2enmod php7.4
         sudo a2enmod mpm_prefork
         sudo systemctl restart apache2
         ;;
