@@ -1,210 +1,203 @@
 #!/bin/bash
 
-# 设置默认值
-DEFAULT_APACHE_PORT=81
-DEFAULT_MT_PROTO_PORT=443
+
+
+# 定义默认值
+DEFAULT_PORT=81
 DEFAULT_USERNAME="admin"
 DEFAULT_PASSWORD="admin"
 DEFAULT_DOMAIN="yourdomain.com"
 
-# 用户输入提示
-echo "请输入配置参数（按Enter键使用默认值）"
-read -p "Apache 端口号 [默认: $DEFAULT_APACHE_PORT]: " INPUT_APACHE_PORT
-read -p "MTProto 代理外部端口号 [默认: $DEFAULT_MT_PROTO_PORT]: " INPUT_MT_PROTO_PORT
-read -p "用户名 [默认: $DEFAULT_USERNAME]: " INPUT_USERNAME
-read -sp "密码 [默认: $DEFAULT_PASSWORD]: " INPUT_PASSWORD
+# 读取用户输入
+read -p "请输入Apache端口号 [默认: $DEFAULT_PORT]: " PORT
+read -p "请输入MTProto代理端口号: " MT_PROTO_PORT
+read -p "请输入用户名 [默认: $DEFAULT_USERNAME]: " USERNAME
+read -sp "请输入密码 [默认: $DEFAULT_PASSWORD]: " PASSWORD
 echo
-read -p "域名 [默认: $DEFAULT_DOMAIN]: " INPUT_DOMAIN
+read -p "请输入您的域名 [默认: $DEFAULT_DOMAIN]: " DOMAIN
 
-# 使用默认值或用户输入的值
-APACHE_PORT=${INPUT_APACHE_PORT:-$DEFAULT_APACHE_PORT}
-MT_PROTO_PORT=${INPUT_MT_PROTO_PORT:-$DEFAULT_MT_PROTO_PORT}
-USERNAME=${INPUT_USERNAME:-$DEFAULT_USERNAME}
-PASSWORD=${INPUT_PASSWORD:-$DEFAULT_PASSWORD}
-DOMAIN=${INPUT_DOMAIN:-$DEFAULT_DOMAIN}
+# 使用默认值如果用户没有输入
+PORT=${PORT:-$DEFAULT_PORT}
+USERNAME=${USERNAME:-$DEFAULT_USERNAME}
+PASSWORD=${PASSWORD:-$DEFAULT_PASSWORD}
+DOMAIN=${DOMAIN:-$DEFAULT_DOMAIN}
 
-# 检查端口是否被占用的函数
-check_port() {
-    local port=$1
-    local prompt=$2
-    local variable=$3
-
-    while netstat -tuln | grep ":$port\b" >/dev/null; do
-        echo "错误: 端口 $port 已被占用，请输入一个不同的端口。"
-        read -p "$prompt" NEW_PORT
-        eval "$variable=\${NEW_PORT:-$port}"
-        port=${NEW_PORT:-$port}
-    done
-}
-
-# 检查 Apache 端口是否被占用
-check_port $APACHE_PORT "Apache 端口号 [默认: $DEFAULT_APACHE_PORT]: " APACHE_PORT
-
-# 检查 MTProto 代理端口是否被占用
-check_port $MT_PROTO_PORT "MTProto 代理外部端口号 [默认: $DEFAULT_MT_PROTO_PORT]: " MT_PROTO_PORT
-
-# 显示配置
-echo "使用的配置如下："
-echo "Apache 端口号: $APACHE_PORT"
-echo "MTProto 代理外部端口号: $MT_PROTO_PORT"
+# 显示用户输入的配置
+echo "配置如下："
+echo "Apache端口号: $PORT"
+echo "MTProto代理端口号: $MT_PROTO_PORT"
 echo "用户名: $USERNAME"
+echo "密码: [隐藏]"
 echo "域名: $DOMAIN"
 
-# 检查操作系统
+# 系统识别和更新
 echo "正在识别操作系统..."
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS_NAME=$ID
     OS_VERSION=$VERSION_ID
 else
-    echo "无法识别操作系统，退出脚本。"
+    echo "无法识别操作系统。"
     exit 1
 fi
 
 echo "操作系统: $OS_NAME $OS_VERSION"
 
-# 安装 Docker 函数
-install_docker() {
-    echo "正在安装 Docker..."
-    case "$OS_NAME" in
-        centos|rhel)
-            sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
-            sudo yum install -y yum-utils
-            sudo yum-config-manager --add-repo https://download.docker.com/linux/$OS_NAME/docker-ce.repo
-            sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-            ;;
-        ubuntu|debian)
-            for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
-            sudo apt-get update
-            sudo apt-get install -y ca-certificates curl gnupg
-            sudo install -m 0755 -d /etc/apt/keyrings
-            curl -fsSL https://download.docker.com/linux/$OS_NAME/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$OS_NAME $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-            sudo apt-get update
-            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-            ;;
-        fedora)
-            sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
-            sudo dnf -y install dnf-plugins-core
-            sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-            sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-            ;;
-        *)
-            echo "不支持的操作系统，退出脚本。"
-            exit 1
-            ;;
-    esac
-    sudo systemctl start docker
-    sudo systemctl enable docker
-    sudo docker run hello-world
-}
+# 安装和更新系统
+echo "正在更新系统并安装 Docker..."
 
 # 安装 Docker
+install_docker() {
+    if [ "$OS_NAME" == "centos" ]; then
+        sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+        sudo yum install -y yum-utils
+        sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+        sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        sudo systemctl start docker
+        sudo docker run hello-world
+
+    elif [ "$OS_NAME" == "debian" ]; then
+        for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
+        sudo apt-get update
+        sudo apt-get install -y ca-certificates curl
+        sudo install -m 0755 -d /etc/apt/keyrings
+        sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        sudo docker run hello-world
+
+    elif [ "$OS_NAME" == "ubuntu" ]; then
+        for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt-get remove -y $pkg; done
+        sudo apt-get update
+        sudo apt-get install -y ca-certificates curl
+        sudo install -m 0755 -d /etc/apt/keyrings
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        sudo docker run hello-world
+
+    elif [ "$OS_NAME" == "rhel" ]; then
+        sudo yum remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
+        sudo yum install -y yum-utils
+        sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+        sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        sudo systemctl start docker
+        sudo docker run hello-world
+
+    elif [ "$OS_NAME" == "fedora" ]; then
+        sudo dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-selinux docker-engine-selinux docker-engine
+        sudo dnf -y install dnf-plugins-core
+        sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+        sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        sudo systemctl start docker
+        sudo docker run hello-world
+
+    else
+        echo "不支持的操作系统。"
+        exit 1
+    fi
+}
+
+# 调用安装 Docker 的函数
 install_docker
+
 
 # 安装 Apache 和 PHP
 echo "正在安装 Apache 和 PHP..."
-if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
+if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
     sudo apt install -y apache2 php libapache2-mod-php php-cli php-curl php-zip curl
-elif [[ "$OS_NAME" == "centos" || "$OS_NAME" == "rhel" ]]; then
+
+elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
     sudo yum install -y httpd php php-cli php-curl php-zip curl
+
 elif [ "$OS_NAME" == "fedora" ]; then
     sudo dnf install -y httpd php php-cli php-curl php-zip curl
-else
-    echo "不支持的操作系统，退出脚本。"
-    exit 1
 fi
 
 # 配置防火墙
 echo "正在配置防火墙..."
-if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
-    sudo ufw allow $APACHE_PORT/tcp
-    sudo ufw reload
-elif [[ "$OS_NAME" == "centos" || "$OS_NAME" == "rhel" || "$OS_NAME" == "fedora" ]]; then
-    sudo firewall-cmd --permanent --add-port=$APACHE_PORT/tcp
+if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+    sudo ufw allow $PORT/tcp
+    sudo ufw enable
+
+elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ]; then
+    sudo firewall-cmd --permanent --add-port=$PORT/tcp
     sudo firewall-cmd --reload
-else
-    echo "不支持的操作系统，无法配置防火墙。"
+
+elif [ "$OS_NAME" == "fedora" ]; then
+    sudo firewall-cmd --add-port=$PORT/tcp --permanent
+    sudo firewall-cmd --reload
 fi
 
-# 更新 Apache 配置
+# 更新 Apache 配置文件，监听自定义端口
 echo "正在更新 Apache 配置文件..."
 update_apache_config() {
-    if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
-        if ! grep -q "Listen $APACHE_PORT" /etc/apache2/ports.conf; then
-            sudo sed -i "\$aListen $APACHE_PORT" /etc/apache2/ports.conf
+    if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+        # 检查端口是否已经在配置文件中
+        if ! grep -q "Listen $PORT" /etc/apache2/ports.conf; then
+            sudo tee -a /etc/apache2/ports.conf > /dev/null <<EOL
+Listen $PORT
+EOL
         fi
-    elif [[ "$OS_NAME" == "centos" || "$OS_NAME" == "rhel" || "$OS_NAME" == "fedora" ]]; then
-        if ! grep -q "Listen $APACHE_PORT" /etc/httpd/conf/httpd.conf; then
-            sudo sed -i "\$aListen $APACHE_PORT" /etc/httpd/conf/httpd.conf
+
+    elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
+        # 检查端口是否已经在配置文件中
+        if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
+            sudo tee -a /etc/httpd/conf/httpd.conf > /dev/null <<EOL
+Listen $PORT
+EOL
         fi
     fi
 }
 
-# 更新 Apache 配置
+# 调用更新 Apache 配置文件的函数
 update_apache_config
 
 # 创建虚拟主机配置
-create_vhost_config() {
-    echo "正在创建虚拟主机配置..."
-    local conf_file
-    local vhost_dir
-
-    if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
-        conf_file="/etc/apache2/sites-available/telegram_update.conf"
-        vhost_dir="/var/www/html/telegram_update"
-        if [ -f $conf_file ]; then
-            echo "虚拟主机配置文件已存在，覆盖更新..."
-        else
-            sudo mkdir -p $vhost_dir
-            sudo tee $conf_file > /dev/null <<EOL
-<VirtualHost *:$APACHE_PORT>
+echo "正在创建虚拟主机配置..."
+if [ "$OS_NAME" == "ubuntu" ] || [ "$OS_NAME" == "debian" ]; then
+    sudo tee /etc/apache2/sites-available/telegram_update.conf > /dev/null <<EOL
+<VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
-    DocumentRoot $vhost_dir
+    DocumentRoot /var/www/html/telegram_update
     ErrorLog \${APACHE_LOG_DIR}/error.log
     CustomLog \${APACHE_LOG_DIR}/access.log combined
 
-    <Directory $vhost_dir>
+    <Directory /var/www/html/telegram_update>
         Options Indexes FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
 </VirtualHost>
 EOL
-            sudo a2ensite telegram_update.conf
-            sudo a2enmod php
-            sudo systemctl restart apache2
-        fi
-    elif [[ "$OS_NAME" == "centos" || "$OS_NAME" == "rhel" || "$OS_NAME" == "fedora" ]]; then
-        conf_file="/etc/httpd/conf.d/telegram_update.conf"
-        vhost_dir="/var/www/html/telegram_update"
-        if [ -f $conf_file ]; then
-            echo "虚拟主机配置文件已存在，覆盖更新..."
-        else
-            sudo mkdir -p $vhost_dir
-            sudo tee $conf_file > /dev/null <<EOL
-<VirtualHost *:$APACHE_PORT>
+    sudo a2ensite telegram_update
+    sudo a2enmod php
+    sudo a2enmod mpm_prefork
+    sudo systemctl restart apache2
+
+elif [ "$OS_NAME" == "centos" ] || [ "$OS_NAME" == "rhel" ] || [ "$OS_NAME" == "fedora" ]; then
+    sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
+<VirtualHost *:$PORT>
     ServerAdmin webmaster@$DOMAIN
-    DocumentRoot $vhost_dir
+    DocumentRoot /var/www/html/telegram_update
     ErrorLog logs/error_log
-    CustomLog logs/access_log common
+    CustomLog logs/access_log combined
 
-    <Directory $vhost_dir>
+    <Directory /var/www/html/telegram_update>
         Options Indexes FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
 </VirtualHost>
 EOL
-            sudo systemctl restart httpd
-        fi
-    fi
-}
+    sudo systemctl restart httpd
+fi
 
-# 创建虚拟主机配置
-create_vhost_config
-
-# 创建安全目录
+# 创建安全目录存放敏感信息
 echo "正在创建安全目录存放敏感信息..."
 sudo mkdir -p /var/private_data
 sudo chown -R www-data:www-data /var/private_data
@@ -283,19 +276,19 @@ for URL in "\${URLS[@]}"; do
     fi
 done
 EOL
+
+# 赋予脚本执行权限
 sudo chmod +x /var/www/html/telegram_update/check_and_download_telegram.sh
 
 # 运行更新脚本
-echo "正在运行更新脚本..."
-sudo /var/www/html/telegram_update/check_and_download_telegram.sh
+sudo bash /var/www/html/telegram_update/check_and_download_telegram.sh
 
 # 设置定时任务
-echo "设置定时任务..."
 (crontab -l 2>/dev/null; echo "*/5 * * * * /var/www/html/telegram_update/check_and_download_telegram.sh") | crontab -
 
 # 提供访问链接
 echo "设置完成。您可以通过以下链接访问您的应用："
-echo "http://$(hostname -I | awk '{print $1}'):$APACHE_PORT"
+echo "http://$(hostname -I | awk '{print $1}'):$PORT/index.php"
 
 # Docker 部署 MTProto 代理
 
