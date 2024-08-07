@@ -295,8 +295,8 @@ docker run -d -p$MT_PROTO_PORT:443 --name=mtproto-proxy --restart=always -v prox
 sleep 5
 
 # 提取 tg:// 和 t.me 链接
-tg_link=$(docker logs mtproto-proxy | grep -o 'tg://[^ ]*')
-tme_link=$(docker logs mtproto-proxy | grep -o 'https://t.me/[^ ]*')
+tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
+tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
 
 # 检查目录是否存在，不存在则创建
 mkdir -p /var/private_data
