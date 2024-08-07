@@ -188,12 +188,6 @@ sudo mkdir -p /var/private_data
 sudo chown -R www-data:www-data /var/private_data
 sudo chmod -R 700 /var/private_data
 
-# 创建安全目录存放敏感信息
-echo "正在创建安全目录存放敏感信息..."
-sudo mkdir -p /var/private_data
-sudo chown -R www-data:www-data /var/private_data
-sudo chmod -R 700 /var/private_data
-
 # 创建 auth.txt 文件
 echo "正在创建 auth.txt 文件..."
 sudo tee /var/private_data/auth.txt > /dev/null <<EOL
