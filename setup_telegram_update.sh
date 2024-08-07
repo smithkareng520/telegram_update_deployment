@@ -70,7 +70,7 @@ update_apache_config() {
                 sudo tee -a /etc/apache2/ports.conf > /dev/null <<EOL
 Listen $PORT
 EOL
-            fi                                                                      ？
+            fi            
             ;;
         centos|rhel|fedora)
             # 检查端口是否已经在配置文件中
