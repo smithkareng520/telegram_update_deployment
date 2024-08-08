@@ -42,6 +42,11 @@ fi
 
 echo "操作系统: $OS_NAME $OS_VERSION"
 
+# 更新系统
+echo "正在更新系统..."
+sudo apt update
+sudo apt upgrade -y
+
 # 安装 Docker
 install_docker() {
     if command -v docker > /dev/null 2>&1; then
