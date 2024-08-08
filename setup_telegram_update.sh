@@ -172,7 +172,7 @@ EOL
         sudo systemctl restart apache2
             ;;
         centos|rhel|fedora)
-            if ! grep -q "Listen $PORT" /etc/httpd/conf/httpd.conf; then
+            if ! grep -q "Listen $PORT" /etc/httpd/conf.d/; then
                 echo "Listen $PORT" | sudo tee -a /etc/httpd/conf/httpd.conf
             fi
             sudo tee /etc/httpd/conf.d/telegram_update.conf > /dev/null <<EOL
