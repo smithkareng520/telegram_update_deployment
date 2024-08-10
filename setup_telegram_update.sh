@@ -114,15 +114,15 @@ install_docker
 echo "正在安装 Apache 和 PHP..."
 case "$OS_NAME" in
     ubuntu|debian)
-        sudo apt-get install -y apache2 php libapache2-mod-php php-cli php-curl php-zip curl python3-pip
+        sudo apt-get install -y apache2 php libapache2-mod-php php-cli php-curl php-zip curl python3-pip ffmpeg
         ;;
     centos|rhel)
-        sudo yum install -y httpd php php-cli php-curl php-zip curl python3-pip
+        sudo yum install -y httpd php php-cli php-curl php-zip curl python3-pip ffmpeg
         sudo systemctl start httpd
         sudo systemctl enable httpd
         ;;
     fedora)
-        sudo dnf install -y httpd php php-cli php-curl php-zip curl python3-pip
+        sudo dnf install -y httpd php php-cli php-curl php-zip curl python3-pip ffmpeg
         sudo systemctl start httpd
         sudo systemctl enable httpd
         ;;
@@ -138,9 +138,9 @@ pip3 install flask-cors
 #安装 yt_dlp 模块
 pip3 install yt-dlp
 
+
 #允许端口5000通过防火墙
 sudo ufw allow 5000/tcp
-
 
 
 # 配置防火墙
