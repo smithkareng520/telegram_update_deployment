@@ -5,7 +5,7 @@ if (!isset($_SESSION['loggedin']) || !$_SESSION['loggedin']) {
     exit();
 }
 
-$filename = '/var/www/html/telegram_update/telegram_win64_portable.zip';
+$filename = '/var/private_data/telegram_win64_portable.zip';
 $basename = basename($filename);
 
 if (file_exists($filename)) {
