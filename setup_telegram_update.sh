@@ -211,7 +211,7 @@ EOL
 
 # 创建和配置下载脚本
 echo "正在创建 check_and_download_telegram.sh 脚本..."
-sudo mkdir -p /var/www/html/telegram_update
+sudo mkdir -p /var/private_data
 sudo tee /var/www/html/telegram_update/check_and_download_telegram.sh > /dev/null <<EOL
 #!/bin/bash
 
@@ -224,7 +224,7 @@ URLS=(
 )
 
 # 目标目录
-DEST_DIR="/var/www/html/telegram_update"
+DEST_DIR="/var/www/html/bilibili"
 LOG_FILE="\$DEST_DIR/download_log.txt"
 
 # 创建或清空日志文件
