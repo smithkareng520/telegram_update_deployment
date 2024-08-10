@@ -208,10 +208,6 @@ if (!isset($_SESSION['loggedin']) || !$_SESSION['loggedin']) {
     <div class="logout">
       <a href="logout.php">Logout</a>
     </div>
-
-    <div class="logout">
-      <a href="download.html">bili解析</a>
-    </div>
     
     <main>
       <div class="grid-container">
