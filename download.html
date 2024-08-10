@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilibili Video Downloader</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .result { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bilibili Video Downloader</h1>
+        <input type="text" id="videoUrl" placeholder="Enter Bilibili video URL" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+        <button onclick="fetchFormats()">Get Formats</button>
+        <div class="result" id="formats"></div>
+        <div class="result" id="downloadStatus"></div>
+    </div>
+
+    <script>
+        async function fetchFormats() {
+            const url = document.getElementById('videoUrl').value;
+            if (!url) {
+                alert('Please enter a video URL.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://45.77.170.55:5000/get_formats?url=${encodeURIComponent(url)}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const formats = await response.json();
+
+                if (formats.error) {
+                    document.getElementById('formats').innerHTML = `<p>Error: ${formats.error}</p>`;
+                    return;
+                }
+
+                let formatsHtml = '<h3>Available Formats:</h3><ul>';
+                formats.forEach(f => {
+                    formatsHtml += `<li>Format: ${f.format_id} - ${f.format_note} - ${f.resolution} - <button onclick="downloadVideo('${url}', '${f.format_id}')">Download</button></li>`;
+                });
+                formatsHtml += '</ul>';
+                document.getElementById('formats').innerHTML = formatsHtml;
+            } catch (error) {
+                document.getElementById('formats').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        async function downloadVideo(url, quality) {
+            try {
+                const response = await fetch('http://45.77.170.55:5000/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, quality })
+                });
+                if (!response.ok) throw new Error('Network response was not ok');
+                const result = await response.json();
+
+                if (result.error) {
+                    document.getElementById('downloadStatus').innerHTML = `<p>Error: ${result.error}</p>`;
+                    return;
+                }
+
+                document.getElementById('downloadStatus').innerHTML = `
+                    <p>${result.message}</p>
+                    <a href="${result.download_url}" download>Click here to download the file</a>
+                `;
+            } catch (error) {
+                document.getElementById('downloadStatus').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
