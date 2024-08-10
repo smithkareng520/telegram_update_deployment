@@ -114,19 +114,34 @@ install_docker
 echo "正在安装 Apache 和 PHP..."
 case "$OS_NAME" in
     ubuntu|debian)
-        sudo apt-get install -y apache2 php libapache2-mod-php php-cli php-curl php-zip curl
+        sudo apt-get install -y apache2 php libapache2-mod-php php-cli php-curl php-zip curl python3-pip
         ;;
     centos|rhel)
-        sudo yum install -y httpd php php-cli php-curl php-zip curl
+        sudo yum install -y httpd php php-cli php-curl php-zip curl python3-pip
         sudo systemctl start httpd
         sudo systemctl enable httpd
         ;;
     fedora)
-        sudo dnf install -y httpd php php-cli php-curl php-zip curl
+        sudo dnf install -y httpd php php-cli php-curl php-zip curl python3-pip
         sudo systemctl start httpd
         sudo systemctl enable httpd
         ;;
 esac
+
+
+#安装 Flask 模块
+pip3 install flask
+
+#安装 flask_cors 模块
+pip3 install flask-cors
+
+#安装 yt_dlp 模块
+pip3 install yt-dlp
+
+#允许端口5000通过防火墙
+sudo ufw allow 5000/tcp
+
+
 
 # 配置防火墙
 echo "正在配置防火墙..."
@@ -329,3 +344,8 @@ echo "T.me 代理链接: $tme_link_external"
 # 设置每天重启 MTProto 代理容器的定时任务
 echo "设置每天重启 MTProto 代理容器的定时任务..."
 (crontab -l 2>/dev/null; echo "0 0 * * * docker restart mtproto-proxy") | crontab -
+
+#
+echo "bilibili后端开启中..."
+sudo python3 /var/www/html/telegram_update/app.py
+
