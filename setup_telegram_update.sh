@@ -224,7 +224,7 @@ URLS=(
 )
 
 # 目标目录
-DEST_DIR="/var/www/html/bilibili"
+DEST_DIR="/var/private_data"
 LOG_FILE="\$DEST_DIR/download_log.txt"
 
 # 创建或清空日志文件
