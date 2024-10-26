@@ -323,6 +323,7 @@ tme_link_external="https://t.me/proxy?server=${HOST_IP}&port=${EXTERNAL_PORT}&se
 
 # 保存链接到文件
 echo "保存代理链接到文件..."
+sudo rm /var/private_data/proxy_links.txt
 sudo tee /var/private_data/proxy_links.txt > /dev/null <<EOL
 TG Link: $tg_link_external
 T.me Link: $tme_link_external
