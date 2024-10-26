@@ -318,8 +318,8 @@ HOST_IP=$(hostname -I | awk '{print $1}')
 EXTERNAL_PORT=$MT_PROTO_PORT  # 使用脚本中的 MTProto 代理外部端口号
 
 # 替换链接中的端口为外部端口号
-tg_link_external="tg://proxy?server=${HOST_IP}&port=${EXTERNAL_PORT}&secret=ab9b40530c90ef7bd07d892802008734"
-tme_link_external="https://t.me/proxy?server=${HOST_IP}&port=${EXTERNAL_PORT}&secret=ab9b40530c90ef7bd07d892802008734"
+tg_link_external="tg://proxy?server=${HOST_IP}&port=${EXTERNAL_PORT}&secret=${SECRET}"
+tme_link_external="https://t.me/proxy?server=${HOST_IP}&port=${EXTERNAL_PORT}&secret=${SECRET}"
 
 # 保存链接到文件
 echo "保存代理链接到文件..."
