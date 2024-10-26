@@ -302,10 +302,14 @@ if [ "$(docker ps -q -f name=mtproto-proxy)" ]; then
 fi
 
 docker pull telegrammessenger/proxy
-docker run -d -p $MT_PROTO_PORT:443 --name mtproto-proxy --restart=always -v proxy-config:/data -e SECRET=ab9b40530c90ef7bd07d892802008734 telegrammessenger/proxy:latest
+
+# 生成随机的 MTProto 密钥
+SECRET=$(openssl rand -hex 16)
+
+docker run -d -p $MT_PROTO_PORT:443 --name mtproto-proxy --restart=always -v proxy-config:/data -e SECRET=$SECRET telegrammessenger/proxy:latest
 
 # 提取代理链接
-sleep 5
+sleep 3
 tg_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'tg://proxy?server=[^ ]*' | head -n 1)
 tme_link=$(docker logs mtproto-proxy 2>&1 | grep -o 'https://t.me/proxy?server=[^ ]*' | head -n 1)
 
