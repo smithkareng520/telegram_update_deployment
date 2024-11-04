@@ -6,7 +6,6 @@ if (!isset($_SESSION['loggedin']) || !$_SESSION['loggedin']) {
 }
 
 // 定义文件路径
-$authFile = '/var/private_data/auth.txt';
 $filePath = '/var/private_data/proxy_links.txt';
 $fileContent = '';
 
@@ -36,10 +35,10 @@ foreach ($lines as $line) {
 
 // 检查是否提交了新代理的端口
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $mtProtoPort = intval($_POST['mtProtoPort']);
+    $mtProtoPort = escapeshellarg(intval($_POST['mtProtoPort']));
     
     // 进行端口号的基本验证
-    if ($mtProtoPort < 1024 || $mtProtoPort > 65535) {
+    if (!is_numeric($mtProtoPort) || $mtProtoPort < 1024 || $mtProtoPort > 65535) {
         echo "请输入有效的端口号（范围：1024-65535）";
         exit;
     }
@@ -78,8 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tgLink = "tg://proxy?server=$host_ip&port=$mtProtoPort&secret=$secret";
     $tmeLink = "https://t.me/proxy?server=$host_ip&port=$mtProtoPort&secret=$secret";
 
-    // 保存新代理链接到文件
-    file_put_contents($authFile, "SECRET:$secret\n");
 
     // 追加新链接到 proxy_links.txt
     file_put_contents($filePath, "TG Link: $tgLink\nT.me Link: $tmeLink\n", FILE_APPEND);
