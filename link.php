@@ -35,7 +35,7 @@ foreach ($lines as $line) {
 
 // 检查是否提交了新代理的端口
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $mtProtoPort = escapeshellarg(intval($_POST['mtProtoPort']));
+    $mtProtoPort = intval($_POST['mtProtoPort']);
     
     // 进行端口号的基本验证
     if (!is_numeric($mtProtoPort) || $mtProtoPort < 1024 || $mtProtoPort > 65535) {
